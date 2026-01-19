@@ -4,10 +4,10 @@ import '../css/Navbar.css'
 function NavBar() {
     return <nav className="navbar">
         <div className="navbar-brand">
-            <Link to="/"><img src="images/logo.png" alt="SignalFM logo" className="k`logo" /></Link>
+            <Link to="/"><img src="images/logo.png" alt="SignalFM logo" className="logo" /></Link>
         </div>
         <div className="navbar-links">
-            <Link to="/" className="nav-link">Home</Link>
+            <Link to="/" className="nav-link"><img src="" alt="" />Home</Link>
             <Link to="/profile" className="nav-link">Profile</Link>
             <Link to="/signup" className="nav-link">SignUp</Link>
             <Link to="/login" className="nav-link">Login</Link>

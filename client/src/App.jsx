@@ -6,18 +6,19 @@ import Profile from './pages/Profile.jsx'
 import SignUp from './pages/SignUp.jsx'
 import {Routes, Route} from "react-router-dom"
 import NavBar from './components/NavBar.jsx'
-import Api from "./services/Api.js"
+import Dashboard from './pages/Dashboard.jsx'
+
+const code = new URLSearchParams(window.location.search).get('code')
 
 function App() {
 
   return (
     <div>
       <NavBar />
-      <Api />
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={code ? <Dashboard code={code} /> :  <Login />} />
           <Route path="/playlist" element={<Playlist />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/signup" element={<SignUp />} />
