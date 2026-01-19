@@ -1,4 +1,3 @@
-import MovieCard from "../components/MovieCard"
 import {useState, useEffect} from "react"
 import "../css/Home.css"
 

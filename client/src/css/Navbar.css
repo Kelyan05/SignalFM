@@ -14,7 +14,7 @@
 
 .navbar-links {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .nav-link {
