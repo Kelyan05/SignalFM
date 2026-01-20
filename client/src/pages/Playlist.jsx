@@ -1,6 +1,11 @@
+import NavBar from '../components/NavBar';
+
 function Playlist() {
     return (
-        <div> <p>Playlist Page</p></div>
+        <div> 
+            <NavBar />
+            <p>View your playlists here</p>
+        </div>
     )
 }
 
