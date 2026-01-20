@@ -16,7 +16,7 @@ function Dashboard() {
     fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(
         search
-      )}&type=track&limit=30`,
+      )}&type=track&limit=50`,
       {
         headers: {
           Authorization: `Bearer ${import.meta.env.VITE_SPOTIFY_TOKEN}`,
