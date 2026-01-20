@@ -1,15 +1,47 @@
-import React from 'react'
-//Authentication URL
-const AUTH_URL = "https://accounts.spotify.com/authorize?client_id=69a8fb711b3543609cffb38d914343af&response_type=code&redirect_uri=http://127.0.0.1:5173&scope=streaming%20user-read-email%20user-read-private%20user-library-read%20user-library-modify%20user-read-playback-state%20user-modify-playback-state"
-
+import { useState } from "react"
+import { signInWithEmailAndPassword } from "firebase/auth"
+import { auth } from "../config/firebase"
+import { useNavigate } from "react-router-dom"
+import "../css/Login.css"
 
 function Login() {
-    return (
-        <div> <a className="btn btn-success btn-lg" href={AUTH_URL}>Login With Spotify</a></div>
-    );
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const navigate = useNavigate()
 
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    await signInWithEmailAndPassword(auth, email, password)
+    navigate("/home")
+  }
+
+  return (
+    <div className="wrapper">
+      <form onSubmit={handleLogin}>
+        <h1>Login</h1>
+
+        <div className="input-box">
+          <input
+            type="email"
+            placeholder="Enter your email"
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="input-box">
+          <input
+            type="password"
+            placeholder="Enter your password"
+            onChange={e => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button className="btn">Login</button>
+      </form>
+    </div>
+  )
 }
-
-
 
 export default Login
