@@ -1,0 +1,5 @@
+Demo account login:
+demo@signalfm.test
+SignalFM123!
+reviewer@signalfm.test
+reviewer@signalfm.test
