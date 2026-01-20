@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import './css/App.css'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Playlist from './pages/Playlist.jsx'

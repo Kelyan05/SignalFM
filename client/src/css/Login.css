@@ -5,13 +5,12 @@
     font-family: 'Inter', sans-serif;
   }
   
-  body {
+  .login-page {
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
   
-    /* Dark overlay for readability */
     background:
       linear-gradient(
         rgba(0, 0, 0, 0.55),
@@ -20,6 +19,7 @@
       url('https://i.pinimg.com/736x/6b/cc/7f/6bcc7f90504c74f286dca773ecfc7daf.jpg')
       no-repeat center/cover;
   }
+  
   
   /* Card container */
   .wrapper {
@@ -111,4 +111,9 @@
     font-size: 14px;
     opacity: 0.85;
   }
+
+.title{
+  padding-left: 26px;
+  color: white;
+}
   
