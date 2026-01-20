@@ -1,0 +1,48 @@
+/* Grid container (wrap the list) */
+.track-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 10px;
+  }
+  
+  /* Individual song card */
+  .track-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
+  }
+  
+  .track-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
+  /* Album art */
+  .track-image {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-bottom: 10px;
+  }
+  
+  /* Text */
+  .track-title {
+    color: black;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  .track-artist {
+    color: black;
+    font-size: 13px;
+    opacity: 0.8;
+  }
+  
