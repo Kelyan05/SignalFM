@@ -23,7 +23,6 @@ function Home() {
     <div className="home">
       <NavBar />
       <p>{user ? `Logged in as: ${user.email}` : "Not logged in"}</p>
-
       {user && <button onClick={logout}>Logout</button>}
     </div>
   );
