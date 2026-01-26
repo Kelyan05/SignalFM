@@ -3,3 +3,5 @@ demo@signalfm.test
 SignalFM123!
 reviewer@signalfm.test
 reviewer@signalfm.test
+
+npm install react-icons --save
