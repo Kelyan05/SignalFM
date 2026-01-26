@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import { auth } from "../config/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
+import Recommendations from "../components/Recommendations";
 
 function Home() {
   const [user, setUser] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     return onAuthStateChanged(auth, (currentUser) => {
@@ -14,16 +14,20 @@ function Home() {
     });
   }, []);
 
-  const logout = async () => {
-    await signOut(auth);
-    navigate("/login");
-  };
-
   return (
-    <div className="home">
+    <div>
       <NavBar />
-      <p>{user ? `Logged in as: ${user.email}` : "Not logged in"}</p>
-      {user && <button onClick={logout}>Logout</button>}
+      <div className="home">
+        <section className="welcome-section">
+          <h1>{user ? `Welcome back ${user.email}` : "Not logged in"} 👋</h1>
+          <p>
+            Discover new music, manage your playlists, and explore what others
+            are listening to.
+          </p>
+        </section>
+        <Recommendations />
+      </div>
+      <Footer />
     </div>
   );
 }

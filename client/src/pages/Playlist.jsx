@@ -1,4 +1,5 @@
 import NavBar from "../components/NavBar";
+import Footer from "../components/Footer";
 
 function Playlist() {
   return (
@@ -6,6 +7,7 @@ function Playlist() {
       <NavBar />
       <h2>No playlists yet</h2>
       <p>Start adding playlists and they will appear here</p>
+      <Footer />
     </div>
   );
 }
