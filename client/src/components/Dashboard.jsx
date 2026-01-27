@@ -6,31 +6,30 @@ import "../css/TrackSearchResult.css";
 function Dashboard() {
   const [accessToken, setAccessToken] = useState(null);
   const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
+  const [results, setResults] = useState([]);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  // Fetch a new token from your server
-  const fetchToken = async () => {
-    try {
-      const res = await fetch("http://localhost:3001/spotify-token");
-      if (!res.ok) {
-        console.error("Failed to fetch token:", res.status);
-        return;
+  // Fetch Spotify token
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const res = await fetch("http://localhost:3001/spotify-token");
+        const data = await res.json();
+        setAccessToken(data.accessToken);
+      } catch (err) {
+        console.error("Token error:", err);
       }
-      const data = await res.json();
-      setAccessToken(data.accessToken);
-    } catch (err) {
-      console.error("Error fetching token:", err);
-    }
-  };
+    };
+    fetchToken();
+  }, []);
 
   // Search Spotify
   const searchSpotify = async () => {
-    if (!search || !accessToken) {
-      setSearchResults([]);
-      return;
-    }
+    if (!search || !accessToken || loading || !hasMore) return;
+
+    setLoading(true);
 
     try {
       const res = await fetch(
@@ -40,46 +39,54 @@ function Dashboard() {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
 
-      if (!res.ok) {
-        console.error("Spotify search error:", res.status, await res.text());
+      const data = await res.json();
+      if (!data.tracks || data.tracks.items.length === 0) {
+        setHasMore(false);
         return;
       }
 
-      const data = await res.json();
-      if (!data.tracks) return;
+      setResults((prev) => {
+        const existing = new Set(prev.map((t) => t.spotifyId)); // use spotifyId for uniqueness
 
-      setSearchResults((prev) => [
-        ...prev,
-        ...data.tracks.items.map((track) => ({
-          id: track.id,
-          title: track.name,
-          artist: track.artists[0]?.name || "Unknown Artist",
-          albumUrl: track.album.images[0]?.url || null,
-        })),
-      ]);
+        const newTracks = data.tracks.items
+          .map((track) => ({
+            spotifyId: track.id, // <-- add this for Firestore
+            id: `${track.id}`, // stable React key
+            title: track.name,
+            artist: track.artists[0]?.name || "Unknown Artist",
+            albumUrl: track.album.images[0]?.url || null,
+            explicit: track.explicit ?? false,
+          }))
+          .filter((track) => {
+            if (existing.has(track.spotifyId)) return false;
+            existing.add(track.spotifyId);
+            return true;
+          });
+
+        return [...prev, ...newTracks];
+      });
+
+      if (data.tracks.items.length < 50) setHasMore(false);
     } catch (err) {
-      console.error("Error searching Spotify:", err);
+      console.error("Search error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Reset search results when `search` changes
+  // Reset on new search
   useEffect(() => {
-    setSearchResults([]);
+    setResults([]);
     setOffset(0);
+    setHasMore(true);
   }, [search]);
 
-  // Get token once on mount
-  useEffect(() => {
-    fetchToken();
-  }, []);
-
-  // Infinite scroll handler
+  // Infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       if (
         window.innerHeight + window.scrollY >=
-          document.body.offsetHeight - 200 &&
-        !loading
+        document.body.offsetHeight - 200
       ) {
         setOffset((prev) => prev + 50);
       }
@@ -87,14 +94,12 @@ function Dashboard() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading]);
+  }, []);
 
-  // Trigger search whenever `search` or `accessToken` changes
+  // Fetch when offset/search changes
   useEffect(() => {
-    if (search && accessToken) {
-      searchSpotify();
-    }
-  }, [search, accessToken, offset]);
+    searchSpotify();
+  }, [offset, search, accessToken]);
 
   return (
     <div className="dashboard">
@@ -107,13 +112,14 @@ function Dashboard() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      {search ? (
-        <div className="track-grid">
-          {searchResults.map((track) => (
-            <TrackSearchResult key={track.id} track={track} />
-          ))}
-        </div>
-      ) : null}
+
+      <div className="track-grid">
+        {results.map((track) => (
+          <TrackSearchResult key={track.id} track={track} />
+        ))}
+      </div>
+
+      {loading && <p className="loading-text">Loading more tracks...</p>}
     </div>
   );
 }
