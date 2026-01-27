@@ -5,6 +5,7 @@ import { auth } from "../config/firebase";
 
 import { MdHome, MdSearch } from "react-icons/md";
 import { TbPlaylist } from "react-icons/tb";
+import { CgProfile } from "react-icons/cg";
 
 import "../css/NavBar.css";
 
@@ -43,12 +44,7 @@ function NavBar() {
       </div>
 
       <div className="navbar-profile">
-        <img
-          src="https://i.pinimg.com/736x/26/e7/37/26e737a42c533a07d58b666dbd4f8781.jpg"
-          alt="profile"
-          className="profile-picture"
-          onClick={() => setOpen(!open)}
-        />
+        <CgProfile className="profile-picture" onClick={() => setOpen(!open)} />
 
         {open && (
           <div className="profile-dropdown">
