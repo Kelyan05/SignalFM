@@ -11,7 +11,7 @@ function Footer() {
         <p>Powered by the Spotify Web API.</p>
         <p>
           Developed for academic purposes as part of a BSc (Hons) Computer
-          Science project athe University of Westminster.
+          Science project at the University of Westminster.
         </p>
       </footer>
     </div>

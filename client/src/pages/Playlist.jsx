@@ -3,9 +3,12 @@ import { auth, db } from "../config/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import NavBar from "../components/NavBar";
 import "../css/Playlist.css";
+import { FaTrashAlt } from "react-icons/fa";
 
 function Playlist() {
   const [tracks, setTracks] = useState([]);
+  const [playlistName, setPlaylistName] = useState("My Playlist");
+  const [editing, setEditing] = useState(false);
 
   const user = auth.currentUser;
   const playlistRef = user
@@ -18,12 +21,24 @@ function Playlist() {
 
       const snap = await getDoc(playlistRef);
       if (snap.exists()) {
-        setTracks(snap.data().tracks || []);
+        const data = snap.data();
+        setTracks(data.tracks || []);
+        setPlaylistName(data.name || "My Playlist");
       }
     };
 
     fetchPlaylist();
   }, []);
+
+  const savePlaylistName = async () => {
+    if (!playlistRef) return;
+
+    await updateDoc(playlistRef, {
+      name: playlistName,
+    });
+
+    setEditing(false);
+  };
 
   const removeTrack = async (spotifyId) => {
     const updatedTracks = tracks.filter(
@@ -59,8 +74,9 @@ function Playlist() {
             <button
               className="remove-btn"
               onClick={() => removeTrack(track.spotifyId)}
+              title="Remove from Playlist"
             >
-              Remove
+              <FaTrashAlt />
             </button>
           </div>
         ))}

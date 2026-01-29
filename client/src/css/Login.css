@@ -117,3 +117,28 @@
   color: white;
 }
   
+
+.login-error {
+  color: #ff4d4f;
+  font-size: 0.9rem;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.password-box {
+  position: relative;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #aaa;
+  font-size: 18px;
+}
+
+.eye-icon:hover {
+  color: #b18cff; /* your signature purple */
+}
