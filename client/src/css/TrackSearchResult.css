@@ -56,3 +56,23 @@
   margin-left: 6px;
   font-weight: 600;
 }
+
+.add-btn,
+.remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #b18cff; /* signature purple */
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.add-btn:hover {
+  transform: scale(1.15);
+  color: #d0b3ff;
+}
+
+.remove-btn:hover {
+  transform: scale(1.15);
+  color: #ff6b6b;
+}

@@ -2,6 +2,7 @@ import React from "react";
 import "../css/TrackSearchResult.css";
 import { auth, db } from "../config/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { FaPlusCircle } from "react-icons/fa";
 
 function TrackSearchResult({ track }) {
   const addToPlaylist = async () => {
@@ -49,13 +50,21 @@ function TrackSearchResult({ track }) {
       <div className="track-info">
         <div className="track-title">
           {track.title}
-          {track.explicit && <span className="explicit-badge">E</span>}
+          {track.explicit && (
+            <span title="explicit song" className="explicit-badge">
+              E
+            </span>
+          )}
         </div>
         <div className="track-artist">{track.artist}</div>
       </div>
 
-      <button className="add-btn" onClick={addToPlaylist}>
-        Add to Playlist
+      <button
+        className="add-btn"
+        onClick={addToPlaylist}
+        title="Add to Playlist"
+      >
+        <FaPlusCircle />
       </button>
     </div>
   );
