@@ -1,120 +1,212 @@
-import React from "react";
 import { useEffect, useState } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
+import { auth, db } from "../config/firebase";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
+
+const ONE_DAY = 1000 * 60 * 60 * 24;
 
 function Recommendations() {
   const [accessToken, setAccessToken] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
-  const [energy, setEnergy] = useState(0.7);
-  const [valence, setValence] = useState(0.6);
+  const [artistRecs, setArtistRecs] = useState([]);
+  const [genreRecs, setGenreRecs] = useState([]);
   const [popularity, setPopularity] = useState(50);
   const [loading, setLoading] = useState(false);
-  const allowedGenres = ["pop", "rock", "hip-hop", "jazz", "electronic"];
+  const [error, setError] = useState(null);
 
-  // Fetch a new token from your server
-  const fetchToken = async () => {
-    try {
-      const res = await fetch("http://localhost:3001/spotify-token");
-      if (!res.ok) {
-        console.error("Failed to fetch token:", res.status);
-        return;
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const res = await fetch("http://localhost:3001/spotify-token");
+        if (!res.ok) throw new Error("Failed to fetch Spotify token");
+        const data = await res.json();
+        setAccessToken(data.accessToken);
+      } catch (err) {
+        console.error("Error fetching token:", err);
+        setError("Failed to connect to Spotify. Please try again later.");
       }
-      const data = await res.json();
-      setAccessToken(data.accessToken);
+    };
+    fetchToken();
+  }, []);
+
+  const fetchUserTracks = async () => {
+    const user = auth.currentUser;
+    if (!user) return [];
+
+    try {
+      const playlistsRef = collection(db, "users", user.uid, "playlists");
+      const snap = await getDocs(playlistsRef);
+
+      let tracks = [];
+      snap.forEach((doc) => {
+        tracks = tracks.concat(doc.data().tracks || []);
+      });
+
+      return tracks;
     } catch (err) {
-      console.error("Error fetching token:", err);
+      console.error("Error fetching user tracks:", err);
+      throw new Error("Failed to load your playlists");
     }
   };
 
-  // Fetch recommendations using a genre seed
+  const isExpired = (timestamp) => Date.now() - timestamp > ONE_DAY;
+
   const fetchRecommendations = async () => {
-    if (!accessToken || allowedGenres.length === 0) return;
+    if (!accessToken) return;
+    const user = auth.currentUser;
+    if (!user) return;
 
     setLoading(true);
-
-    const seedGenres = allowedGenres.slice(0, 2);
-
-    // build a genre query like: genre:pop OR genre:rock
-    const genreQuery = seedGenres.map((g) => `genre:${g}`).join(" OR ");
-
-    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-      genreQuery
-    )}&type=track&limit=50`;
+    setError(null);
 
     try {
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      // Check cache first
+      const cacheRef = doc(db, "users", user.uid, "recommendations", "current");
+      const cacheSnap = await getDoc(cacheRef);
 
-      if (!res.ok) {
-        console.error("Search error:", res.status, await res.text());
+      if (cacheSnap.exists()) {
+        const cached = cacheSnap.data();
+        if (
+          !isExpired(cached.generatedAt) &&
+          (cached.artistTracks?.length > 0 || cached.genreTracks?.length > 0)
+        ) {
+          setArtistRecs(cached.artistTracks || []);
+          setGenreRecs(cached.genreTracks || []);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fetch user's tracks
+      const userTracks = await fetchUserTracks();
+      if (userTracks.length === 0) {
+        setArtistRecs([]);
+        setGenreRecs([]);
         setLoading(false);
         return;
       }
 
-      const data = await res.json();
+      // Analyze user's music preferences
+      const artistCounts = {};
+      const genreCounts = {};
+      userTracks.forEach((t) => {
+        if (t.artist)
+          artistCounts[t.artist] = (artistCounts[t.artist] || 0) + 1;
+        if (t.genre) genreCounts[t.genre] = (genreCounts[t.genre] || 0) + 1;
+      });
 
-      // client-side filtering instead of Spotify recommendations
-      const filtered = data.tracks.items
-        .filter((track) => track.popularity >= popularity)
-        .slice(0, 40);
+      const topArtists = Object.entries(artistCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([artist]) => artist);
 
-      setRecommendations(
-        filtered.map((track) => ({
-          id: track.id,
-          title: track.name,
-          artist: track.artists?.[0]?.name ?? "Unknown Artist",
-          albumUrl: track.album?.images?.[0]?.url ?? null,
-        }))
+      const topGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([genre]) => genre);
+
+      // Helper function to fetch tracks from Spotify
+      const fetchTracks = async (query, limit = 20) => {
+        const res = await fetch(
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+            query
+          )}&type=track&limit=${limit}`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        if (!res.ok) {
+          throw new Error(`Spotify API error: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.tracks?.items || [];
+      };
+
+      const existingIds = new Set(userTracks.map((t) => t.spotifyId));
+
+      // Fetch artist recommendations in parallel
+      const artistPromises = topArtists.map((artist) =>
+        fetchTracks(`artist:${artist}`, 20)
       );
+      const artistResults = await Promise.all(artistPromises);
+
+      const artistTracks = [];
+      artistResults.forEach((items) => {
+        for (const t of items) {
+          if (!existingIds.has(t.id)) {
+            artistTracks.push({
+              spotifyId: t.id,
+              id: t.id,
+              title: t.name,
+              artist: t.artists[0]?.name ?? "Unknown Artist",
+              albumUrl: t.album.images[0]?.url ?? null,
+              explicit: t.explicit ?? false,
+              popularity: t.popularity ?? 0,
+            });
+          }
+        }
+      });
+
+      // Fetch genre recommendations in parallel
+      const genrePromises = topGenres.map((genre) =>
+        fetchTracks(`genre:${genre}`, 20)
+      );
+      const genreResults = await Promise.all(genrePromises);
+
+      const genreTracks = [];
+      genreResults.forEach((items) => {
+        for (const t of items) {
+          if (!existingIds.has(t.id)) {
+            genreTracks.push({
+              spotifyId: t.id,
+              id: t.id,
+              title: t.name,
+              artist: t.artists[0]?.name ?? "Unknown Artist",
+              albumUrl: t.album.images[0]?.url ?? null,
+              explicit: t.explicit ?? false,
+              popularity: t.popularity ?? 0,
+            });
+          }
+        }
+      });
+
+      // Cache the results
+      await setDoc(cacheRef, {
+        artistTracks,
+        genreTracks,
+        generatedAt: Date.now(),
+        sourceArtists: topArtists.slice(0, 3),
+        sourceGenres: topGenres,
+      });
+
+      setArtistRecs(artistTracks);
+      setGenreRecs(genreTracks);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
+      setError(
+        err.message || "Failed to load recommendations. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchToken();
-  }, []);
-
-  // Re-fetch when popularity changes
-  useEffect(() => {
     if (accessToken) {
       fetchRecommendations();
     }
-  }, [accessToken, popularity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
+
+  // Filter recommendations by popularity on the client side
+  const filteredArtistRecs = artistRecs.filter(
+    (track) => track.popularity >= popularity
+  );
+  const filteredGenreRecs = genreRecs.filter(
+    (track) => track.popularity >= popularity
+  );
 
   return (
     <div className="filters">
       <label>
-        Energy
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          value={energy}
-          onChange={(e) => setEnergy(Number(e.target.value))}
-        />
-      </label>
-
-      <label>
-        Mood
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          value={valence}
-          onChange={(e) => setValence(Number(e.target.value))}
-        />
-      </label>
-
-      <label>
-        Popularity
+        Popularity (minimum: {popularity})
         <input
           type="range"
           min="0"
@@ -124,22 +216,52 @@ function Recommendations() {
           onChange={(e) => setPopularity(Number(e.target.value))}
         />
       </label>
-      <div>
-        <h3>Recommended for you</h3>
 
-        <div className="track-grid">
-          {loading && <p>Loading recommendations...</p>}
+      <h3>Recommended for you</h3>
 
-          {!loading && recommendations.length === 0 && (
-            <p>No recommendations found. Try adjusting filters.</p>
-          )}
+      {error && (
+        <div
+          className="error-message"
+          style={{ color: "red", padding: "10px" }}
+        >
+          {error}
+        </div>
+      )}
 
-          {!loading &&
-            recommendations.map((track) => (
+      {loading && <p>Loading recommendations...</p>}
+
+      {!loading &&
+        !error &&
+        filteredArtistRecs.length === 0 &&
+        filteredGenreRecs.length === 0 && (
+          <p>
+            {artistRecs.length > 0 || genreRecs.length > 0
+              ? "No tracks match your popularity filter. Try lowering it!"
+              : "Add some songs to your playlist to get recommendations 🎧"}
+          </p>
+        )}
+
+      {filteredArtistRecs.length > 0 && (
+        <>
+          <h4>Based on your favorite artists</h4>
+          <div className="track-grid">
+            {filteredArtistRecs.map((track) => (
               <TrackSearchResult key={track.id} track={track} />
             ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
+
+      {filteredGenreRecs.length > 0 && (
+        <>
+          <h4>Based on your favorite genres</h4>
+          <div className="track-grid">
+            {filteredGenreRecs.map((track) => (
+              <TrackSearchResult key={track.id} track={track} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
