@@ -16,9 +16,7 @@ function Recommendations() {
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const res = await fetch(
-          "https://signalfm-api.onrender.com/spotify-token"
-        );
+        const res = await fetch("https://signalfm.onrender.com/spotify-token");
         if (!res.ok) throw new Error("Failed to fetch Spotify token");
         const data = await res.json();
         setAccessToken(data.accessToken);
