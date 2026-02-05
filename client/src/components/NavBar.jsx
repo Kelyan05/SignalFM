@@ -7,7 +7,7 @@ import { MdHome, MdSearch } from "react-icons/md";
 import { TbPlaylist } from "react-icons/tb";
 import { CgProfile } from "react-icons/cg";
 
-import "../css/NavBar.css";
+import "../css/Navbar.css";
 
 function NavBar() {
   const [open, setOpen] = useState(false);
