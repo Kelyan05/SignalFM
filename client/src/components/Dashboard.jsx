@@ -15,7 +15,9 @@ function Dashboard() {
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const res = await fetch("http://localhost:3001/spotify-token");
+        const res = await fetch(
+          "https://signalfm-api.onrender.com/spotify-token"
+        );
         const data = await res.json();
         setAccessToken(data.accessToken);
       } catch (err) {
