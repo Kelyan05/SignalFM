@@ -1,6 +1,6 @@
 // Example using Express
 import express from "express"; //used to create the server
-import axios from "axios"; //used to make HTTP requests
+import axios from "axios"; //used to make HTTP requests to spotify
 import cors from "cors"; //used to allow cross-origin requests
 import dotenv from "dotenv"; //used to load client id and secret from .env file
 
@@ -8,6 +8,11 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("SignalFM backend is running 🚀");
+});
+
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
