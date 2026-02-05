@@ -24,8 +24,8 @@ function Home() {
             Discover new music, manage your playlists, and explore what others
             are listening to.
           </p>
+          <Recommendations />
         </section>
-        <Recommendations />
       </div>
       <Footer />
     </div>
