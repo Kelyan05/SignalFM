@@ -6,12 +6,16 @@ import dotenv from "dotenv"; //used to load client id and secret from .env file
 
 dotenv.config();
 const app = express();
-app.use(cors());
+
+// CHANGE THIS LINE
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173'
+}));
+
 app.use(express.json());
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-
 
 app.get("/spotify-token", async (req, res) => {
     try {
@@ -30,9 +34,9 @@ app.get("/spotify-token", async (req, res) => {
       res.json({ accessToken: tokenResponse.data.access_token });
     } catch (error) {
       console.error("Spotify token error:", error.message);
-      res.status(500).json({ error: "Spotify token error" }); // <-- send JSON instead of plain text
+      res.status(500).json({ error: "Spotify token error" });
     }
   });
-  
 
-app.listen(3001, () => console.log("Server running on 3001"));
+// CHANGE THIS LINE  
+app.listen(process.env.PORT || 3001, () => console.log("Server running on port", process.env.PORT || 3001));
