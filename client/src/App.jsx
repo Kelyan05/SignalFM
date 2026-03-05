@@ -7,6 +7,7 @@ import { Routes, Route } from "react-router-dom";
 import { auth } from "./config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import SharedPlaylist from "./pages/SharedPlaylist.jsx";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -50,6 +51,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/shared/:playlistId" element={<SharedPlaylist />} />
         </Routes>
       </main>
     </div>

@@ -1,86 +1,130 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../config/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  query,
+  where,
+} from "firebase/firestore";
+
 import NavBar from "../components/NavBar";
-import "../css/Playlist.css";
-import { FaTrashAlt } from "react-icons/fa";
+import PlaylistCard from "../components/PlaylistCard";
+import { FaPlus } from "react-icons/fa";
 
 function Playlist() {
-  const [tracks, setTracks] = useState([]);
-  const [playlistName, setPlaylistName] = useState("My Playlist");
-  const [editing, setEditing] = useState(false);
+  const [playlists, setPlaylists] = useState([]);
+  const [playlistName, setPlaylistName] = useState("");
 
   const user = auth.currentUser;
-  const playlistRef = user
-    ? doc(db, "users", user.uid, "playlists", "default")
-    : null;
 
   useEffect(() => {
-    const fetchPlaylist = async () => {
-      if (!playlistRef) return;
+    const fetchPlaylists = async () => {
+      if (!user) return;
 
-      const snap = await getDoc(playlistRef);
-      if (snap.exists()) {
-        const data = snap.data();
-        setTracks(data.tracks || []);
-        setPlaylistName(data.name || "My Playlist");
-      }
+      const q = query(
+        collection(db, "playlists"),
+        where("ownerId", "==", user.uid)
+      );
+
+      const snap = await getDocs(q);
+
+      const list = snap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setPlaylists(list);
     };
 
-    fetchPlaylist();
-  }, []);
+    fetchPlaylists();
+  }, [user]);
 
-  const savePlaylistName = async () => {
-    if (!playlistRef) return;
+  const createPlaylist = async () => {
+    if (!playlistName.trim()) return;
 
-    await updateDoc(playlistRef, {
+    const playlistId = crypto.randomUUID();
+
+    const newPlaylist = {
+      ownerId: user.uid,
       name: playlistName,
-    });
+      tracks: [],
+      public: true,
+      createdAt: new Date(),
+    };
 
-    setEditing(false);
+    await setDoc(doc(db, "playlists", playlistId), newPlaylist);
+
+    setPlaylists((prev) => [...prev, { id: playlistId, ...newPlaylist }]);
+
+    setPlaylistName("");
   };
 
-  const removeTrack = async (spotifyId) => {
-    const updatedTracks = tracks.filter(
+  const renamePlaylist = async (playlistId, name) => {
+    await updateDoc(doc(db, "playlists", playlistId), {
+      name,
+    });
+
+    setPlaylists((prev) =>
+      prev.map((p) => (p.id === playlistId ? { ...p, name } : p))
+    );
+  };
+
+  const removeTrack = async (playlistId, spotifyId) => {
+    const playlist = playlists.find((p) => p.id === playlistId);
+
+    const updatedTracks = playlist.tracks.filter(
       (track) => track.spotifyId !== spotifyId
     );
 
-    setTracks(updatedTracks); // instant UI update
-
-    await updateDoc(playlistRef, {
+    await updateDoc(doc(db, "playlists", playlistId), {
       tracks: updatedTracks,
     });
+
+    setPlaylists((prev) =>
+      prev.map((p) =>
+        p.id === playlistId ? { ...p, tracks: updatedTracks } : p
+      )
+    );
+  };
+
+  const sharePlaylist = (playlistId) => {
+    const link = `${window.location.origin}/shared/${playlistId}`;
+
+    navigator.clipboard.writeText(link);
+
+    alert("Playlist link copied!");
   };
 
   return (
     <div className="playlist-page">
       <NavBar />
-      <h1>My Playlist</h1>
 
-      {tracks.length === 0 && <p>No tracks yet.</p>}
+      <h1>My Playlists</h1>
 
-      <div className="track-grid">
-        {tracks.map((track) => (
-          <div key={track.spotifyId} className="track-card">
-            <img src={track.albumUrl} className="track-image" />
+      <div className="playlist-create">
+        <input
+          placeholder="New playlist name"
+          value={playlistName}
+          onChange={(e) => setPlaylistName(e.target.value)}
+        />
 
-            <div className="track-title">
-              {track.title}
-              {track.explicit && <span className="explicit-badge">E</span>}
-            </div>
-
-            <div className="track-artist">{track.artist}</div>
-
-            <button
-              className="remove-btn"
-              onClick={() => removeTrack(track.spotifyId)}
-              title="Remove from Playlist"
-            >
-              <FaTrashAlt />
-            </button>
-          </div>
-        ))}
+        <button onClick={createPlaylist}>
+          <FaPlus /> Create Playlist
+        </button>
       </div>
+
+      {playlists.map((playlist) => (
+        <PlaylistCard
+          key={playlist.id}
+          playlist={playlist}
+          onRename={renamePlaylist}
+          onRemoveTrack={removeTrack}
+          onShare={sharePlaylist}
+        />
+      ))}
     </div>
   );
 }

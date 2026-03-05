@@ -1,71 +1,62 @@
-import React from "react";
-import "../css/TrackSearchResult.css";
+import { useState } from "react";
 import { auth, db } from "../config/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { FaPlusCircle } from "react-icons/fa";
 
-function TrackSearchResult({ track }) {
-  const addToPlaylist = async () => {
+function TrackSearchResult({ track, playlists }) {
+  const [open, setOpen] = useState(false);
+
+  const addToPlaylist = async (playlistId) => {
     const user = auth.currentUser;
-    if (!user) return alert("Please log in");
+    if (!user) return alert("Login required");
 
-    const playlistRef = doc(db, "users", user.uid, "playlists", "default");
-    const playlistSnap = await getDoc(playlistRef);
+    const playlistRef = doc(db, "playlists", playlistId);
 
-    let tracks = [];
+    await updateDoc(playlistRef, {
+      tracks: arrayUnion({
+        spotifyId: track.spotifyId,
+        title: track.title,
+        artist: track.artist,
+        albumUrl: track.albumUrl,
+        explicit: track.explicit,
+      }),
+    });
 
-    if (playlistSnap.exists()) {
-      tracks = playlistSnap.data().tracks || [];
-    }
-
-    // 🔥 Prevent duplicates (explicit / clean share same spotifyId)
-    if (tracks.some((t) => t.spotifyId === track.spotifyId)) {
-      return alert("Track already in playlist");
-    }
-
-    await setDoc(
-      playlistRef,
-      {
-        name: "Default Playlist",
-        tracks: [
-          ...tracks,
-          {
-            spotifyId: track.spotifyId,
-            title: track.title,
-            artist: track.artist || "Unknown Artist",
-            albumUrl: track.albumUrl || "",
-            explicit: track.explicit ?? false,
-            addedAt: new Date(),
-          },
-        ],
-      },
-      { merge: true }
-    );
+    alert("Added to playlist!");
+    setOpen(false);
   };
 
   return (
     <div className="track-card">
-      <img src={track.albumUrl} alt={track.title} className="track-image" />
+      <img
+        src={track.albumUrl || "https://via.placeholder.com/200"}
+        className="track-image"
+      />
 
       <div className="track-info">
-        <div className="track-title">
-          {track.title}
-          {track.explicit && (
-            <span title="explicit song" className="explicit-badge">
-              E
-            </span>
-          )}
-        </div>
+        <div className="track-title">{track.title}</div>
         <div className="track-artist">{track.artist}</div>
       </div>
 
-      <button
-        className="add-btn"
-        onClick={addToPlaylist}
-        title="Add to Playlist"
-      >
-        <FaPlusCircle />
-      </button>
+      <div className="playlist-dropdown">
+        <button className="add-btn" onClick={() => setOpen(!open)}>
+          <FaPlusCircle />
+        </button>
+
+        {open && (
+          <div className="dropdown-menu">
+            {playlists.map((playlist) => (
+              <div
+                key={playlist.id}
+                className="dropdown-item"
+                onClick={() => addToPlaylist(playlist.id)}
+              >
+                {playlist.name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

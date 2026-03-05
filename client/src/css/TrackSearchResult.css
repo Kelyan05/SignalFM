@@ -1,9 +1,12 @@
+/* TrackSearchResult.css */
+
 /* Grid container (wrap the list) */
 .track-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 16px;
     padding: 10px;
+    overflow: visible;
   }
   
   /* Individual song card */
@@ -16,6 +19,7 @@
     cursor: pointer;
     transition: all 0.25s ease;
     backdrop-filter: blur(8px);
+    position: relative;
   }
   
   .track-card:hover {
@@ -75,4 +79,41 @@
 .remove-btn:hover {
   transform: scale(1.15);
   color: #ff6b6b;
+}
+
+.playlist-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  background: #181818;
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 160px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  animation: dropdownFade 0.15s ease;
+
+}
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.dropdown-item:hover {
+  background: #282828;
 }
