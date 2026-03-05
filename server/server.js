@@ -37,7 +37,7 @@ app.use(
 
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api", searchRoutes);
-app.use("/api/playlists", shareRoutes)
+app.use("/api/playlists", shareRoutes);
 
 const PORT = process.env.PORT || 3001;
 
