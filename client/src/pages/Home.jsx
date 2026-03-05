@@ -1,32 +1,82 @@
 import { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import { auth } from "../config/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import Footer from "../components/Footer";
 import Recommendations from "../components/Recommendations";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import "../css/Home.css";
 
 function Home() {
   const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setLoadingAuth(false);
     });
+
+    return unsubscribe;
   }, []);
 
+  const username = user?.email ? user.email.split("@")[0] : "Guest";
+
   return (
-    <div>
+    <div className="home-page">
       <NavBar />
-      <div className="home">
-        <section className="welcome-section">
-          <h1>{user ? `Welcome back ${user.email}` : "Not logged in"} 👋</h1>
-          <p>
-            Discover new music, manage your playlists, and explore what others
-            are listening to.
-          </p>
+
+      <main className="home-container">
+        {/* HERO SECTION */}
+        <section className="hero-section">
+          {loadingAuth ? (
+            <>
+              <Skeleton height={40} width={300} />
+              <Skeleton height={20} width={500} style={{ marginTop: 20 }} />
+              <Skeleton height={50} width={180} style={{ marginTop: 30 }} />
+            </>
+          ) : (
+            <>
+              <h1>
+                {user
+                  ? `Welcome back, ${username} 👋`
+                  : "Welcome to SignalFM 🎧"}
+              </h1>
+
+              <p className="hero-subtitle">
+                Discover new music, build playlists, and explore personalized
+                recommendations.
+              </p>
+
+              <div className="hero-actions">
+                <button
+                  className="primary-btn"
+                  onClick={() =>
+                    document
+                      .querySelector(".search-container")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
+                  🔍 Start Exploring
+                </button>
+              </div>
+
+              {!user && (
+                <p className="guest-message">
+                  Login to unlock personalized recommendations ✨
+                </p>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* RECOMMENDATIONS */}
+        <section className="recommendation-section">
           <Recommendations />
         </section>
-      </div>
+      </main>
+
       <Footer />
     </div>
   );

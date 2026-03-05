@@ -1,42 +1,46 @@
-// Example using Express
-import express from "express"; //used to create the server
-import axios from "axios"; //used to make HTTP requests to spotify
-import cors from "cors"; //used to allow cross-origin requests
-import dotenv from "dotenv"; //used to load client id and secret from .env file
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import recommendationRoutes from "./routes/recommendationRoutes.js";
+import rateLimit from "express-rate-limit";
+import searchRoutes from "./routes/searchRoutes.js";
+import shareRoutes from "./routes/shareRoutes.js";
 
 dotenv.config();
+
 const app = express();
 
-// CHANGE THIS LINE
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173'
-}));
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: {
+    error: "Too many requests. Please try again later."
+  }
+});
 
 app.use(express.json());
+app.use(limiter);
 
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "http://localhost:5173"
+];
 
-app.get("/spotify-token", async (req, res) => {
-    try {
-      const tokenResponse = await axios.post(
-        "https://accounts.spotify.com/api/token",
-        "grant_type=client_credentials",
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization:
-              "Basic " + Buffer.from(CLIENT_ID + ":" + CLIENT_SECRET).toString("base64"),
-          },
-        }
-      );
-  
-      res.json({ accessToken: tokenResponse.data.access_token });
-    } catch (error) {
-      console.error("Spotify token error:", error.message);
-      res.status(500).json({ error: "Spotify token error" });
-    }
-  });
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
 
-// CHANGE THIS LINE  
-app.listen(process.env.PORT || 3001, () => console.log("Server running on port", process.env.PORT || 3001));
+
+app.use("/api/recommendations", recommendationRoutes);
+app.use("/api", searchRoutes);
+app.use("/api/playlists", shareRoutes)
+
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});

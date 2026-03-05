@@ -1,78 +1,95 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
 import "../css/Dashboard.css";
 import "../css/TrackSearchResult.css";
+import { auth, db } from "../config/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Dashboard() {
-  const [accessToken, setAccessToken] = useState(null);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState(null);
+  const [playlists, setPlaylists] = useState([]);
 
-  // Fetch Spotify token
   useEffect(() => {
-    const fetchToken = async () => {
+    const fetchPlaylists = async () => {
+      const user = auth.currentUser;
+
+      if (!user) return;
+
       try {
-        const res = await fetch("https://signalfm.onrender.com/spotify-token");
-        const data = await res.json();
-        setAccessToken(data.accessToken);
+        const q = query(
+          collection(db, "playlists"),
+          where("ownerId", "==", user.uid)
+        );
+
+        const snap = await getDocs(q);
+
+        const list = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setPlaylists(list);
       } catch (err) {
-        console.error("Token error:", err);
+        console.error("Playlist fetch error:", err);
       }
     };
-    fetchToken();
-  }, []);
 
-  // Search Spotify
-  const searchSpotify = async () => {
-    if (!search || !accessToken || loading || !hasMore) return;
+    fetchPlaylists();
+  }, []);
+  const searchSpotify = useCallback(async () => {
+    if (!search.trim() || loading || !hasMore) return;
 
     setLoading(true);
+    setError(null);
 
     try {
+      let headers = {};
+      const user = auth.currentUser;
+
+      if (user) {
+        const idToken = await user.getIdToken();
+        headers.Authorization = `Bearer ${idToken}`;
+      }
+
       const res = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+        `${import.meta.env.VITE_API_URL}/api/search?q=${encodeURIComponent(
           search
-        )}&type=track&limit=50&offset=${offset}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        )}&offset=${offset}`,
+        { headers }
       );
 
+      if (!res.ok) throw new Error("Search request failed");
+
       const data = await res.json();
-      if (!data.tracks || data.tracks.items.length === 0) {
+
+      if (!data.tracks || data.tracks.length === 0) {
         setHasMore(false);
         return;
       }
 
-      setResults((prev) => {
-        const existing = new Set(prev.map((t) => t.spotifyId)); // use spotifyId for uniqueness
+      const normalizedTracks = data.tracks;
 
-        const newTracks = data.tracks.items
-          .map((track) => ({
-            spotifyId: track.id, // <-- add this for Firestore
-            id: `${track.id}`, // stable React key
-            title: track.name,
-            artist: track.artists[0]?.name || "Unknown Artist",
-            albumUrl: track.album.images[0]?.url || null,
-            explicit: track.explicit ?? false,
-          }))
-          .filter((track) => {
-            if (existing.has(track.spotifyId)) return false;
-            existing.add(track.spotifyId);
-            return true;
-          });
+      setResults((prev) => {
+        const existing = new Set(prev.map((t) => t.spotifyId));
+
+        const newTracks = normalizedTracks.filter(
+          (track) => !existing.has(track.spotifyId)
+        );
 
         return [...prev, ...newTracks];
       });
-
-      if (data.tracks.items.length < 50) setHasMore(false);
     } catch (err) {
       console.error("Search error:", err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, offset, loading, hasMore]);
 
   // Reset on new search
   useEffect(() => {
@@ -81,25 +98,36 @@ function Dashboard() {
     setHasMore(true);
   }, [search]);
 
+  // Fetch when offset changes
+  useEffect(() => {
+    if (offset > 0) searchSpotify();
+  }, [offset, searchSpotify]);
+
+  // Debounce search
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      if (search.trim()) searchSpotify();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [search, searchSpotify]);
+
   // Infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       if (
         window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 200
+          document.body.offsetHeight - 200 &&
+        !loading &&
+        hasMore
       ) {
-        setOffset((prev) => prev + 50);
+        setOffset((prev) => prev + 20);
       }
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Fetch when offset/search changes
-  useEffect(() => {
-    searchSpotify();
-  }, [offset, search, accessToken]);
+  }, [loading, hasMore]);
 
   return (
     <div className="dashboard">
@@ -107,19 +135,35 @@ function Dashboard() {
         <input
           className="search-input"
           type="search"
-          placeholder="Search songs or artists"
+          placeholder="Search songs or artists..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
+      {error && <div className="error-message">{error}</div>}
+
+      {!loading && results.length === 0 && search && (
+        <p className="empty-text">No results found.</p>
+      )}
+
       <div className="track-grid">
         {results.map((track) => (
-          <TrackSearchResult key={track.id} track={track} />
+          <TrackSearchResult
+            key={track.spotifyId}
+            track={track}
+            playlists={playlists}
+          />
         ))}
       </div>
 
-      {loading && <p className="loading-text">Loading more tracks...</p>}
+      {loading && (
+        <div className="skeleton-grid">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="skeleton-card"></div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
