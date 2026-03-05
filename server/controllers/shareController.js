@@ -15,7 +15,8 @@ export const getSharedPlaylist = async (req, res) => {
 
     const playlist = playlistSnap.data();
 
-    if (!playlist.public) {
+    // If public flag doesn't exist, assume public
+    if (playlist.public === false) {
       return res.status(403).json({
         error: "Playlist is private"
       });
