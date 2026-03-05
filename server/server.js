@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(limiter);
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173"
+  process.env.VITE_API_URL || "http://localhost:5173"
 ];
 
 app.use(
