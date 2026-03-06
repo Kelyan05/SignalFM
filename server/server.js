@@ -40,7 +40,7 @@ app.use(cors({
 
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api", searchRoutes);
-app.use("/api/playlists", shareRoutes);
+app.use("/shared", shareRoutes);
 
 const PORT = process.env.PORT || 3001;
 
