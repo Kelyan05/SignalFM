@@ -10,7 +10,7 @@ function SharedPlaylist() {
     const fetchPlaylist = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/playlists/${playlistId}`
+          `${import.meta.env.VITE_API_URL}/api/shared/${playlistId}`
         );
 
         if (!res.ok) {
