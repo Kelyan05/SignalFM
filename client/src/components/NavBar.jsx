@@ -22,7 +22,7 @@ function NavBar() {
     <nav className="navbar">
       <div className="navbar-brand">
         <Link to="/home">
-          <img src="images/default.png" alt="SignalFM logo" className="logo" />
+          <img src="/signalfmlogo.png" alt="SignalFM logo" className="logo" />
         </Link>
       </div>
 
