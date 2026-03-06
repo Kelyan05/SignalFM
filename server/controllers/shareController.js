@@ -1,3 +1,5 @@
+import { db } from "../config/firebaseAdmin.js";
+
 export const getSharedPlaylist = async (req, res) => {
   try {
     const { playlistId } = req.params;
