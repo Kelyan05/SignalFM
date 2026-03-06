@@ -28,3 +28,33 @@
     opacity: 0.85;
   }
   
+  .playlist-guide {
+    background: #121212;
+    border: 1px solid #282828;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    color: white;
+    max-width: 600px;
+  }
+  
+  .playlist-guide h3 {
+    color: #1DB954;
+    margin-bottom: 10px;
+  }
+  
+  .playlist-guide ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .playlist-guide li {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .playlist-tip {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #b3b3b3;
+  }
