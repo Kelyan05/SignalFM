@@ -1,8 +1,8 @@
-import { db } from "../config/firebaseAdmin.js";
-
 export const getSharedPlaylist = async (req, res) => {
   try {
     const { playlistId } = req.params;
+
+    console.log("Fetching playlist:", playlistId);
 
     const playlistRef = db.collection("playlists").doc(playlistId);
     const playlistSnap = await playlistRef.get();
@@ -13,16 +13,7 @@ export const getSharedPlaylist = async (req, res) => {
       });
     }
 
-    const playlist = playlistSnap.data();
-
-    // If public flag doesn't exist, assume public
-    if (playlist.public === false) {
-      return res.status(403).json({
-        error: "Playlist is private"
-      });
-    }
-
-    res.json(playlist);
+    res.json(playlistSnap.data());
 
   } catch (error) {
     console.error(error);
