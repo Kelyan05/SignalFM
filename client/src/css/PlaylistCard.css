@@ -1,0 +1,109 @@
+/* PLAYLIST CARD */
+
+.playlist-box{
+    background:#181818;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:30px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.4);
+    transition:transform .2s;
+  }
+  
+  .playlist-box:hover{
+    transform:translateY(-4px);
+  }
+  
+  /* HEADER */
+  
+  .playlist-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  
+  .playlist-header h2{
+    color:#fff;
+    cursor:pointer;
+    font-size:1.5rem;
+  }
+  
+  .playlist-edit input{
+    padding:8px;
+    border:none;
+    border-radius:6px;
+    background:#282828;
+    color:white;
+  }
+  
+  /* BUTTONS */
+  
+  .playlist-actions{
+    display:flex;
+    gap:10px;
+  }
+  
+  .share-btn{
+    background:#1db954;
+    border:none;
+    padding:8px 14px;
+    border-radius:20px;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+  }
+  
+  .share-btn:hover{
+    background:#1ed760;
+  }
+  
+  .delete-btn{
+    background:#e53935;
+    border:none;
+    padding:8px 14px;
+    border-radius:20px;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+  }
+  
+  .delete-btn:hover{
+    background:#ff4d4d;
+  }
+  
+  /* TRACK GRID */
+  
+  .track-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:20px;
+  }
+
+
+  .playlist-cover {
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  
+  .playlist-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .playlist-collage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .playlist-collage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }

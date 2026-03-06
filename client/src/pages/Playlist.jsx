@@ -98,15 +98,42 @@ function Playlist() {
     alert("Playlist link copied!");
   };
 
+  const deletePlaylist = (playlistId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this playlist?"
+    );
+
+    if (!confirmed) return;
+
+    setPlaylists(playlists.filter((playlist) => playlist.id !== playlistId));
+  };
+
   return (
     <div className="playlist-page">
       <NavBar />
 
       <h1>My Playlists</h1>
 
+      <div className="playlist-guide">
+        <h3>How Playlists Work</h3>
+
+        <ul>
+          <li>🎵 Create a playlist using the input above.</li>
+          <li>✏️ Click a playlist title to rename it.</li>
+          <li>➖ Remove tracks from playlists using the remove button.</li>
+          <li>🔗 Click "Share Playlist" to copy a public link.</li>
+          <li>🗑️ Delete playlists permanently using the delete button.</li>
+        </ul>
+
+        <p className="playlist-tip">
+          Tip: Shared playlists can be viewed by anyone using the link — they do
+          not need a SignalFM account.
+        </p>
+      </div>
+
       <div className="playlist-create">
         <input
-          placeholder="New playlist name"
+          placeholder="Enter a new playlist name"
           value={playlistName}
           onChange={(e) => setPlaylistName(e.target.value)}
         />
@@ -123,6 +150,7 @@ function Playlist() {
           onRename={renamePlaylist}
           onRemoveTrack={removeTrack}
           onShare={sharePlaylist}
+          onDelete={deletePlaylist}
         />
       ))}
     </div>

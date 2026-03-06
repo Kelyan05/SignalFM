@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
-import { auth } from "../config/firebase";
+import { auth, db } from "../config/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+
 import "../css/Dashboard.css";
 
 function Recommendations() {
@@ -9,6 +11,31 @@ function Recommendations() {
   const [popularity, setPopularity] = useState(50);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [playlists, setPlaylists] = useState([]);
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      const user = auth.currentUser;
+
+      if (!user) return;
+
+      const q = query(
+        collection(db, "playlists"),
+        where("ownerId", "==", user.uid)
+      );
+
+      const snap = await getDocs(q);
+
+      setPlaylists(
+        snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+    };
+
+    fetchPlaylists();
+  }, []);
 
   const fetchRecommendations = async () => {
     try {
@@ -104,7 +131,11 @@ function Recommendations() {
           <h4>Based on Your Favorite Artists</h4>
           <div className="track-grid">
             {filteredArtist.map((track) => (
-              <TrackSearchResult key={track.id} track={track} />
+              <TrackSearchResult
+                key={track.id}
+                track={track}
+                playlists={playlists}
+              />
             ))}
           </div>
         </>
@@ -115,7 +146,11 @@ function Recommendations() {
           <h4>Based on Your Favorite Genres</h4>
           <div className="track-grid">
             {filteredGenre.map((track) => (
-              <TrackSearchResult key={track.id} track={track} />
+              <TrackSearchResult
+                key={track.id}
+                track={track}
+                playlists={playlists}
+              />
             ))}
           </div>
         </>
