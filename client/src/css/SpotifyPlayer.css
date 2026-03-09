@@ -1,0 +1,118 @@
+/* SIGNALFM BAT SIGNAL PLAYER */
+
+.player-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  
+    height: 80px;
+  
+    background: linear-gradient(90deg, #0a0a0a, #121212);
+  
+    border-top: 2px solid #f5c518;
+  
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  
+    padding: 10px 25px;
+  
+    box-shadow: 0 -3px 15px rgba(245, 197, 24, 0.25);
+  
+    z-index: 1000;
+  }
+  
+  /* album artwork */
+  
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .player-info img {
+    width: 55px;
+    height: 55px;
+    border-radius: 6px;
+  
+    box-shadow: 0 0 10px rgba(245, 197, 24, 0.5);
+  }
+  
+  /* track text */
+  
+  .player-info p:first-child {
+    font-weight: 600;
+    color: #ffffff;
+  }
+  
+  .player-info p:last-child {
+    font-size: 0.9rem;
+    color: #aaa;
+  }
+  
+  /* controls */
+  
+  .player-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  /* buttons */
+  
+  .player-controls button {
+    background: transparent;
+  
+    border: 2px solid #f5c518;
+    color: #f5c518;
+  
+    padding: 6px 14px;
+  
+    border-radius: 6px;
+  
+    font-size: 0.9rem;
+  
+    cursor: pointer;
+  
+    transition: all 0.2s ease;
+  }
+  
+  .player-controls button:hover {
+    background: #f5c518;
+    color: black;
+  
+    box-shadow: 0 0 10px #f5c518;
+  }
+  
+  /* glowing signal pulse */
+  
+  .player-bar::before {
+    content: "";
+  
+    position: absolute;
+  
+    top: -2px;
+    left: 0;
+  
+    width: 100%;
+    height: 2px;
+  
+    background: #f5c518;
+  
+    animation: signalPulse 3s infinite;
+  }
+  
+  @keyframes signalPulse {
+    0% {
+      opacity: 0.3;
+    }
+  
+    50% {
+      opacity: 1;
+    }
+  
+    100% {
+      opacity: 0.3;
+    }
+  }
