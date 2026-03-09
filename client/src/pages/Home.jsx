@@ -49,6 +49,10 @@ function Home() {
                 recommendations.
               </p>
 
+              <a href="https://signalfm.onrender.com/api/spotify/login">
+                Connect Spotify
+              </a>
+
               <div className="hero-actions">
                 <button
                   className="primary-btn"
