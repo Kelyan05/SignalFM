@@ -5,6 +5,7 @@ import recommendationRoutes from "./routes/recommendationRoutes.js";
 import rateLimit from "express-rate-limit";
 import searchRoutes from "./routes/searchRoutes.js";
 import shareRoutes from "./routes/sharedRoutes.js";
+import spotifyAuth from "./routes/spotifyAuth.js";
 
 dotenv.config();
 
@@ -40,6 +41,8 @@ app.use(cors({
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api", searchRoutes);
 app.use("/api/shared", shareRoutes);
+app.use("/api/spotify", spotifyAuth);
+
 
 const PORT = process.env.PORT || 3001;
 
