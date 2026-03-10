@@ -14,10 +14,10 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [playlists, setPlaylists] = useState([]);
 
+  // Fetch user playlists
   useEffect(() => {
     const fetchPlaylists = async () => {
       const user = auth.currentUser;
-
       if (!user) return;
 
       try {
@@ -25,35 +25,27 @@ function Dashboard() {
           collection(db, "playlists"),
           where("ownerId", "==", user.uid)
         );
-
         const snap = await getDocs(q);
-
-        const list = snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setPlaylists(list);
+        setPlaylists(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       } catch (err) {
         console.error("Playlist fetch error:", err);
       }
     };
-
     fetchPlaylists();
   }, []);
+
+  // Spotify search
   const searchSpotify = useCallback(async () => {
     if (!search.trim() || loading || !hasMore) return;
-
     setLoading(true);
     setError(null);
 
     try {
-      let headers = {};
       const user = auth.currentUser;
-
+      const headers = {};
       if (user) {
-        const idToken = await user.getIdToken();
-        headers.Authorization = `Bearer ${idToken}`;
+        const token = await user.getIdToken();
+        headers.Authorization = `Bearer ${token}`;
       }
 
       const res = await fetch(
@@ -63,8 +55,7 @@ function Dashboard() {
         { headers }
       );
 
-      if (!res.ok) throw new Error("Search request failed");
-
+      if (!res.ok) throw new Error("Search failed");
       const data = await res.json();
 
       if (!data.tracks || data.tracks.length === 0) {
@@ -72,47 +63,26 @@ function Dashboard() {
         return;
       }
 
-      const normalizedTracks = data.tracks;
+      const existing = new Set(results.map((t) => t.spotifyId));
+      const newTracks = data.tracks.filter((t) => !existing.has(t.spotifyId));
 
-      setResults((prev) => {
-        const existing = new Set(prev.map((t) => t.spotifyId));
-
-        const newTracks = normalizedTracks.filter(
-          (track) => !existing.has(track.spotifyId)
-        );
-
-        return [...prev, ...newTracks];
-      });
+      setResults((prev) => [...prev, ...newTracks]);
     } catch (err) {
-      console.error("Search error:", err);
-      setError("Something went wrong. Please try again.");
+      console.error(err);
+      setError("Could not load tracks.");
     } finally {
       setLoading(false);
     }
-  }, [search, offset, loading, hasMore]);
+  }, [search, offset, loading, hasMore, results]);
 
-  // Reset on new search
+  // Reset results on new search
   useEffect(() => {
     setResults([]);
     setOffset(0);
     setHasMore(true);
   }, [search]);
 
-  // Fetch when offset changes
-  useEffect(() => {
-    if (offset > 0) searchSpotify();
-  }, [offset, searchSpotify]);
-
-  // Debounce search
-  useEffect(() => {
-    const delay = setTimeout(() => {
-      if (search.trim()) searchSpotify();
-    }, 400);
-
-    return () => clearTimeout(delay);
-  }, [search, searchSpotify]);
-
-  // Infinite scroll
+  // Load more on scroll
   useEffect(() => {
     const handleScroll = () => {
       if (
@@ -124,10 +94,17 @@ function Dashboard() {
         setOffset((prev) => prev + 20);
       }
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loading, hasMore]);
+
+  // Debounce search
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      if (search.trim()) searchSpotify();
+    }, 400);
+    return () => clearTimeout(delay);
+  }, [search, searchSpotify]);
 
   return (
     <div className="dashboard">
@@ -142,7 +119,6 @@ function Dashboard() {
       </div>
 
       {error && <div className="error-message">{error}</div>}
-
       {!loading && results.length === 0 && search && (
         <p className="empty-text">No results found.</p>
       )}

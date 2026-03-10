@@ -1,160 +1,82 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
-import { auth, db } from "../config/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
-
+import { auth } from "../config/firebase";
 import "../css/Dashboard.css";
+import "../css/TrackSearchResult.css";
 
 function Recommendations() {
-  const [artistRecs, setArtistRecs] = useState([]);
-  const [genreRecs, setGenreRecs] = useState([]);
-  const [popularity, setPopularity] = useState(50);
+  const [tracks, setTracks] = useState([]);
+  const [selectedGenre, setSelectedGenre] = useState("pop");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [playlists, setPlaylists] = useState([]);
+
+  const genres = ["pop", "rap", "afro", "jazz", "country", "rock"];
 
   useEffect(() => {
-    const fetchPlaylists = async () => {
-      const user = auth.currentUser;
+    fetchRecommendations(selectedGenre);
+  }, [selectedGenre]);
 
-      if (!user) return;
-
-      const q = query(
-        collection(db, "playlists"),
-        where("ownerId", "==", user.uid)
-      );
-
-      const snap = await getDocs(q);
-
-      setPlaylists(
-        snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-      );
-    };
-
-    fetchPlaylists();
-  }, []);
-
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = async (genre) => {
     try {
       const user = auth.currentUser;
-
       if (!user) {
-        setError("Login to see personalized recommendations.");
+        setError("Please log in to see recommendations.");
         return;
       }
 
       setLoading(true);
       setError(null);
 
-      const idToken = await user.getIdToken();
-
-      const genre = "pop";
+      const token = await user.getIdToken();
 
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/recommendations?genre=${genre}`,
         {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      if (!res.ok) throw new Error("Failed to fetch recommendations");
+      if (!res.ok) throw new Error("Failed to fetch");
 
       const data = await res.json();
-
-      setArtistRecs(data.artistTracks || []);
-      setGenreRecs(data.genreTracks || []);
+      setTracks(data.recommendations || []);
     } catch (err) {
-      console.error("Recommendation error:", err);
-      setError("Failed to load recommendations.");
+      console.error(err);
+      setError("Could not load recommendations.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, []);
-
-  const filteredArtist = artistRecs.filter(
-    (track) => track.popularity >= popularity
-  );
-
-  const filteredGenre = genreRecs.filter(
-    (track) => track.popularity >= popularity
-  );
-
   return (
-    <div className="recommendations-container">
-      <div className="filter-bar">
-        <label>
-          Minimum Popularity: <strong>{popularity}</strong>
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={popularity}
-          onChange={(e) => setPopularity(Number(e.target.value))}
-        />
+    <div className="dashboard">
+      <h2>Music Recommendations</h2>
+
+      {/* Genre selector */}
+      <div className="genre-buttons">
+        {genres.map((genre) => (
+          <button
+            key={genre}
+            className={selectedGenre === genre ? "active" : ""}
+            onClick={() => setSelectedGenre(genre)}
+          >
+            {genre}
+          </button>
+        ))}
       </div>
 
-      <h3>Recommended For You 🎧</h3>
+      {loading && <p>Loading recommendations...</p>}
+      {error && <p>{error}</p>}
 
-      {error && <div className="error-message">{error}</div>}
-
-      {loading && (
-        <div className="skeleton-grid">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="skeleton-card"></div>
-          ))}
-        </div>
-      )}
-
-      {!loading &&
-        !error &&
-        filteredArtist.length === 0 &&
-        filteredGenre.length === 0 && (
-          <p className="empty-text">
-            No recommendations match your filter. Try lowering popularity.
-          </p>
-        )}
-
-      {filteredArtist.length > 0 && (
-        <>
-          <h4>Based on Your Favorite Artists</h4>
-          <div className="track-grid">
-            {filteredArtist.map((track) => (
-              <TrackSearchResult
-                key={track.id}
-                track={track}
-                playlists={playlists}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      {filteredGenre.length > 0 && (
-        <>
-          <h4>Based on Your Favorite Genres</h4>
-          <div className="track-grid">
-            {filteredGenre.map((track) => (
-              <TrackSearchResult
-                key={track.id}
-                track={track}
-                playlists={playlists}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      <div className="track-grid">
+        {tracks.map((track) => (
+          <TrackSearchResult
+            key={track.spotifyId}
+            track={track}
+            playlists={[]}
+          />
+        ))}
+      </div>
     </div>
   );
 }
