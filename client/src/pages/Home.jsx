@@ -13,6 +13,15 @@ function Home() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("spotifyToken");
+
+    if (token) {
+      localStorage.setItem("spotifyAccessToken", token);
+    }
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoadingAuth(false);
@@ -39,9 +48,7 @@ function Home() {
           ) : (
             <>
               <h1>
-                {user
-                  ? `Welcome back, ${username} 👋`
-                  : "Welcome to SignalFM 🎧"}
+                {user ? `Welcome back, ${username}` : "Welcome to SignalFM 🎧"}
               </h1>
 
               <p className="hero-subtitle">
@@ -49,9 +56,15 @@ function Home() {
                 recommendations.
               </p>
 
-              <a href="https://signalfm.onrender.com/api/spotify/login">
+              <button
+                onClick={() =>
+                  (window.location.href = `${
+                    import.meta.env.VITE_API_URL
+                  }/api/spotify/login`)
+                }
+              >
                 Connect Spotify
-              </a>
+              </button>
 
               <div className="hero-actions">
                 <button

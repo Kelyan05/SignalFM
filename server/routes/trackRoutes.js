@@ -1,10 +1,9 @@
 import express from "express";
-import { getRecommendations } from "../controllers/recommendationController.js";
+import { likeTrackHandler } from "../controllers/trackController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
-
 
 const router = express.Router();
 
-router.get("/", authMiddleware,getRecommendations);
+router.post("/like", authMiddleware, likeTrackHandler);
 
 export default router;

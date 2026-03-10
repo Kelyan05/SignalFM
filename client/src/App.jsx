@@ -1,67 +1,83 @@
 import { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+
 import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Playlist from "./pages/Playlist.jsx";
 import Discover from "./pages/Discover.jsx";
-import { Routes, Route } from "react-router-dom";
+import SharedPlaylist from "./pages/SharedPlaylist.jsx";
+import SpotifyAuth from "./pages/SpotifyAuth.jsx";
+
+import SpotifyPlayer from "./components/SpotifyPlayer.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
 import { auth } from "./config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import SharedPlaylist from "./pages/SharedPlaylist.jsx";
-import SpotifyPlayer from "./components/SpotifyPlayer.jsx";
+
 import { PlayerProvider } from "./context/PlayerProvider.jsx";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setLoadingAuth(false);
     });
+
+    return unsubscribe;
   }, []);
+
+  if (loadingAuth) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <PlayerProvider>
-      <div>
-        <main className="main-content">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Login />} />
+      <main className="main-content">
+        <Routes>
+          {/* public */}
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
 
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute user={user}>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
+          {/* spotify redirect */}
+          <Route path="/spotify-auth" element={<SpotifyAuth />} />
 
-            <Route
-              path="/playlist"
-              element={
-                <ProtectedRoute user={user}>
-                  <Playlist />
-                </ProtectedRoute>
-              }
-            />
+          {/* protected routes */}
 
-            <Route
-              path="/discover"
-              element={
-                <ProtectedRoute user={user}>
-                  <Discover />
-                </ProtectedRoute>
-              }
-            />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute user={user}>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
 
-            <Route path="/shared/:playlistId" element={<SharedPlaylist />} />
-          </Routes>
+          <Route
+            path="/playlist"
+            element={
+              <ProtectedRoute user={user}>
+                <Playlist />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Global Player */}
-          <SpotifyPlayer />
-        </main>
-      </div>
+          <Route
+            path="/discover"
+            element={
+              <ProtectedRoute user={user}>
+                <Discover />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/shared/:playlistId" element={<SharedPlaylist />} />
+        </Routes>
+
+        <SpotifyPlayer />
+      </main>
     </PlayerProvider>
   );
 }
