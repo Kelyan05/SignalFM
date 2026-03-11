@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
 import "../css/Dashboard.css";
 import "../css/TrackSearchResult.css";
@@ -13,6 +13,7 @@ function Dashboard() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState(null);
   const [playlists, setPlaylists] = useState([]);
+  const lastFetchTime = useRef(0);
 
   // Fetch user playlists
   useEffect(() => {
@@ -37,6 +38,12 @@ function Dashboard() {
   // Spotify search
   const searchSpotify = useCallback(async () => {
     if (!search.trim() || loading || !hasMore) return;
+
+    const now = Date.now();
+    // prevent API spam (1 request per second max)
+    if (now - lastFetchTime.current < 1000) {
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -89,20 +96,24 @@ function Dashboard() {
         window.innerHeight + window.scrollY >=
           document.body.offsetHeight - 200 &&
         !loading &&
-        hasMore
+        hasMore &&
+        offset < 200
       ) {
         setOffset((prev) => prev + 20);
       }
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading, hasMore]);
+  }, [loading, hasMore, offset]);
 
   // Debounce search
   useEffect(() => {
     const delay = setTimeout(() => {
-      if (search.trim()) searchSpotify();
+      if (search.trim() && search.length > 2) {
+        searchSpotify();
+      }
     }, 400);
+
     return () => clearTimeout(delay);
   }, [search, searchSpotify]);
 

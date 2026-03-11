@@ -12,25 +12,53 @@ function Home() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // 1️⃣ Store tokens from Spotify callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("spotifyToken");
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
 
-    if (token) {
-      localStorage.setItem("spotifyAccessToken", token);
+    if (accessToken && refreshToken) {
+      localStorage.setItem("spotifyAccessToken", accessToken);
+      localStorage.setItem("spotifyRefreshToken", refreshToken);
+      // Clean URL params
+      window.history.replaceState({}, document.title, "/");
     }
   }, []);
 
+  // 2️⃣ Firebase auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoadingAuth(false);
     });
-
     return unsubscribe;
   }, []);
 
   const username = user?.email ? user.email.split("@")[0] : "Guest";
+
+  // 3️⃣ Helper to refresh access token if needed
+  const getFreshAccessToken = async () => {
+    const refreshToken = localStorage.getItem("spotifyRefreshToken");
+    if (!refreshToken) return null;
+
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/spotify/token?refresh_token=${refreshToken}`
+      );
+      const data = await response.json();
+      if (data.access_token) {
+        localStorage.setItem("spotifyAccessToken", data.access_token);
+        return data.access_token;
+      }
+      return null;
+    } catch (err) {
+      console.error("Failed to refresh Spotify token:", err);
+      return null;
+    }
+  };
 
   return (
     <div className="home-page">
@@ -90,7 +118,7 @@ function Home() {
 
         {/* RECOMMENDATIONS */}
         <section className="recommendation-section">
-          <Recommendations />
+          <Recommendations getFreshAccessToken={getFreshAccessToken} />
         </section>
       </main>
 
