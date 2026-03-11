@@ -33,9 +33,23 @@ function SpotifyPlayer() {
       });
 
       // Ready
-      playerInstance.addListener("ready", ({ device_id }) => {
+      playerInstance.addListener("ready", async ({ device_id }) => {
         console.log("Player ready:", device_id);
+
         setDeviceId(device_id);
+
+        // transfer playback to this web player
+        await fetch("https://api.spotify.com/v1/me/player", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            device_ids: [device_id],
+            play: false,
+          }),
+        });
       });
 
       // Playback state

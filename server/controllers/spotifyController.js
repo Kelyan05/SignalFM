@@ -1,37 +1,51 @@
-import axios from "axios";
+import { exchangeCodeForToken, refreshAccessToken } from "../utils/spotifyAuth.js";
 
-export const getSpotifyAccessToken = async (req, res) => {
+// Redirect user to Spotify login
+export const spotifyLogin = (req, res) => {
+  const scope =
+    "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state";
+  
+  const authUrl =
+    "https://accounts.spotify.com/authorize?" +
+    new URLSearchParams({
+      response_type: "code",
+      client_id: process.env.SPOTIFY_CLIENT_ID,
+      scope,
+      redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
+      show_dialog: true,
+    });
+
+  res.redirect(authUrl);
+};
+
+// Callback endpoint from Spotify after login
+export const spotifyCallback = async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.status(400).send("Authorization code missing");
+
   try {
-    const params = new URLSearchParams();
+    const { access_token, refresh_token } = await exchangeCodeForToken(code);
 
-    params.append("grant_type", "refresh_token");
-    params.append("refresh_token", process.env.SPOTIFY_REFRESH_TOKEN);
-
-    const response = await axios.post(
-      "https://accounts.spotify.com/api/token",
-      params,
-      {
-        headers: {
-          Authorization:
-            "Basic " +
-            Buffer.from(
-              process.env.SPOTIFY_CLIENT_ID +
-                ":" +
-                process.env.SPOTIFY_CLIENT_SECRET
-            ).toString("base64"),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+    // Redirect to frontend with tokens
+    res.redirect(
+      `${process.env.SPOTIFY_REDIRECT_URI}/spotify-auth?access_token=${access_token}&refresh_token=${refresh_token}`
     );
+  } catch (err) {
+    console.error("Spotify callback error:", err.response?.data || err.message);
+    res.status(500).send("Spotify authentication failed");
+  }
+};
 
-    res.json({
-      accessToken: response.data.access_token,
-    });
-  } catch (error) {
-    console.error("Spotify token error:", error.response?.data || error.message);
+// Refresh access token endpoint
+export const spotifyToken = async (req, res) => {
+  const { refresh_token } = req.query;
+  if (!refresh_token) return res.status(400).json({ error: "Refresh token required" });
 
-    res.status(500).json({
-      error: "Failed to get Spotify token",
-    });
+  try {
+    const accessToken = await refreshAccessToken(refresh_token);
+    res.json({ access_token: accessToken });
+  } catch (err) {
+    console.error("Spotify token refresh error:", err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to refresh token" });
   }
 };

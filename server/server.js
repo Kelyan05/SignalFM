@@ -5,7 +5,6 @@ import recommendationRoutes from "./routes/recommendationRoutes.js";
 import rateLimit from "express-rate-limit";
 import searchRoutes from "./routes/searchRoutes.js";
 import shareRoutes from "./routes/sharedRoutes.js";
-import spotifyAuth from "./routes/spotifyAuth.js";
 import trackRoutes from "./routes/trackRoutes.js";
 import spotifyRoutes from "./routes/spotifyRoutes.js";
 
@@ -26,7 +25,6 @@ app.use(limiter);
 
 app.use(cors({
   origin: [
-    "http://localhost:5173",
     "https://signalfm-site.onrender.com",
     "http://127.0.0.1:5173",
   ],
@@ -39,7 +37,6 @@ app.use(cors({
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api", searchRoutes);
 app.use("/api/shared", shareRoutes);
-app.use("/api/spotify", spotifyAuth);
 app.use("/api/tracks", trackRoutes);
 app.use("/api/spotify", spotifyRoutes);
 
