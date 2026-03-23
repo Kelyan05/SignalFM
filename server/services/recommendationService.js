@@ -19,7 +19,7 @@ export const calculateScore = (
         : 0;
   
     return (
-      genreMatch * 0.40 +   // more weight now
+      genreMatch * 0.40 +   
       popularityScore * 0.25 +
       recencyScore * 0.15 +
       engagementScore * 0.20

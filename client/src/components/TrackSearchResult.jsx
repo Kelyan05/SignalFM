@@ -10,6 +10,7 @@ function TrackSearchResult({ track, playlists }) {
       <img
         src={track.albumUrl || track.image || "https://via.placeholder.com/200"}
         className="track-image"
+        onClick={(playCurrentTrack) => playTrack(track)}
       />
       <div className="track-info">
         <div className="track-title">{track.title}</div>

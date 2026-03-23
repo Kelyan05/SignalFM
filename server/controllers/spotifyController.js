@@ -28,7 +28,7 @@ export const spotifyCallback = async (req, res) => {
 
     // Redirect to frontend with tokens
     res.redirect(
-      `${process.env.SPOTIFY_REDIRECT_URI}/spotify-auth?access_token=${access_token}&refresh_token=${refresh_token}`
+      `${process.env.FRONTEND_URL}/spotify-auth?access_token=${access_token}&refresh_token=${refresh_token}`
     );
   } catch (err) {
     console.error("Spotify callback error:", err.response?.data || err.message);

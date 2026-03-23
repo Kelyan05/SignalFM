@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { PlayerContext } from "../context/PlayerContext";
 import "../css/SpotifyPlayer.css";
 
@@ -8,42 +8,43 @@ function SpotifyPlayer() {
   const [player, setPlayer] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
   const [paused, setPaused] = useState(true);
+
   const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(1); // ✅ prevent divide issues
   const [volume, setVolume] = useState(0.5);
 
-  // Get token from localStorage
   const accessToken = localStorage.getItem("spotify_access_token");
 
-  // Format time mm:ss
-  const formatTime = (ms) =>
-    `${Math.floor(ms / 60000)}:${Math.floor((ms % 60000) / 1000)
-      .toString()
-      .padStart(2, "0")}`;
+  const lastPlayedTrack = useRef(null);
+  const isPlayingRef = useRef(false);
 
-  // Initialize Spotify Web Playback SDK
+  const formatTime = (ms = 0) => {
+    const min = Math.floor(ms / 60000);
+    const sec = Math.floor((ms % 60000) / 1000)
+      .toString()
+      .padStart(2, "0");
+    return `${min}:${sec}`;
+  };
+
+  // INIT PLAYER
   useEffect(() => {
-    if (!accessToken) return;
+    if (!accessToken || player) return;
 
     const initPlayer = () => {
-      const playerInstance = new window.Spotify.Player({
+      const p = new window.Spotify.Player({
         name: "SignalFM Player",
         getOAuthToken: (cb) => cb(accessToken),
-        volume: volume,
+        volume: 0.5,
       });
 
-      // Ready
-      playerInstance.addListener("ready", async ({ device_id }) => {
-        console.log("Player ready:", device_id);
-
+      p.addListener("ready", async ({ device_id }) => {
         setDeviceId(device_id);
 
-        // transfer playback to this web player
         await fetch("https://api.spotify.com/v1/me/player", {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             device_ids: [device_id],
@@ -52,44 +53,52 @@ function SpotifyPlayer() {
         });
       });
 
-      // Playback state
-      playerInstance.addListener("player_state_changed", (state) => {
+      p.addListener("player_state_changed", (state) => {
         if (!state) return;
+
+        setPaused(state.paused);
+        setPosition(state.position || 0);
+        setDuration(state.duration || 1);
+
         const track = state.track_window.current_track;
+
+        if (!track) return;
+
         setCurrentTrack({
           spotifyId: track.id,
           title: track.name,
-          artist: track.artists[0].name,
-          image: track.album.images[0].url,
+          artist: track.artists?.[0]?.name || "Unknown",
+          image: track.album?.images?.[0]?.url || "",
         });
-        setPosition(state.position);
-        setDuration(state.duration);
-        setPaused(state.paused);
 
-        // Auto-play next in queue if finished
         if (state.paused && state.position === state.duration) {
           playNext();
         }
       });
 
-      playerInstance.connect();
-      setPlayer(playerInstance);
+      p.connect();
+      setPlayer(p);
     };
 
     if (!window.Spotify) {
-      window.onSpotifyWebPlaybackSDKReady = initPlayer;
       const script = document.createElement("script");
       script.src = "https://sdk.scdn.co/spotify-player.js";
       script.async = true;
       document.body.appendChild(script);
+
+      window.onSpotifyWebPlaybackSDKReady = initPlayer;
     } else {
       initPlayer();
     }
-  }, [accessToken]);
+  }, [accessToken, player]);
 
-  // Play selected track
   const playCurrentTrack = async () => {
     if (!currentTrack || !deviceId || !accessToken) return;
+
+    if (lastPlayedTrack.current === currentTrack.spotifyId) return;
+    if (isPlayingRef.current) return;
+
+    isPlayingRef.current = true;
 
     try {
       await fetch(
@@ -97,27 +106,38 @@ function SpotifyPlayer() {
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             uris: [`spotify:track:${currentTrack.spotifyId}`],
           }),
         }
       );
+
+      lastPlayedTrack.current = currentTrack.spotifyId;
     } catch (err) {
-      console.error("Failed to play track:", err);
+      console.error(err);
     }
+
+    setTimeout(() => {
+      isPlayingRef.current = false;
+    }, 1500);
   };
 
-  // Call this only when user clicks play
+  useEffect(() => {
+    if (!deviceId || !currentTrack) return;
+
+    const timer = setTimeout(playCurrentTrack, 800);
+    return () => clearTimeout(timer);
+  }, [currentTrack?.spotifyId, deviceId]);
 
   if (!currentTrack) return null;
 
   return (
     <div className="player-bar">
       <div className="player-info">
-        <img src={currentTrack.image} alt={currentTrack.title} />
+        <img src={currentTrack.image || ""} alt={currentTrack.title} />
         <div>
           <p>{currentTrack.title}</p>
           <p>{currentTrack.artist}</p>
@@ -126,9 +146,11 @@ function SpotifyPlayer() {
 
       <div className="player-controls">
         <button onClick={() => player?.previousTrack()}>Prev</button>
+
         <button onClick={() => player?.togglePlay()}>
           {paused ? "Play" : "Pause"}
         </button>
+
         <button onClick={() => player?.nextTrack()}>Next</button>
       </div>
 
@@ -146,8 +168,9 @@ function SpotifyPlayer() {
           step="0.01"
           value={volume}
           onChange={(e) => {
-            setVolume(e.target.value);
-            player?.setVolume(e.target.value);
+            const v = Number(e.target.value);
+            setVolume(v);
+            player?.setVolume(v);
           }}
         />
       </div>

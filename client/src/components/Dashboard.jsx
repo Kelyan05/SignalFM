@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
 import "../css/Dashboard.css";
-import "../css/TrackSearchResult.css";
 import { auth, db } from "../config/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
@@ -13,43 +12,56 @@ function Dashboard() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState(null);
   const [playlists, setPlaylists] = useState([]);
+
+  const controllerRef = useRef(null);
   const lastFetchTime = useRef(0);
 
-  // Fetch user playlists
+  //Fetch playlists safely
   useEffect(() => {
     const fetchPlaylists = async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-
       try {
+        const user = auth.currentUser;
+        if (!user) return;
+
         const q = query(
           collection(db, "playlists"),
           where("ownerId", "==", user.uid)
         );
+
         const snap = await getDocs(q);
-        setPlaylists(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setPlaylists(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (err) {
-        console.error("Playlist fetch error:", err);
+        console.error("Playlist error:", err);
       }
     };
+
     fetchPlaylists();
   }, []);
 
-  // Spotify search
+  //SEARCH FUNCTION
   const searchSpotify = useCallback(async () => {
     if (!search.trim() || loading || !hasMore) return;
 
+    // 🔒 rate limit (1 request/sec)
     const now = Date.now();
-    // prevent API spam (1 request per second max)
-    if (now - lastFetchTime.current < 1000) {
-      return;
+    if (now - lastFetchTime.current < 1000) return;
+    lastFetchTime.current = now;
+
+    // cancel previous request
+    if (controllerRef.current) {
+      controllerRef.current.abort();
     }
+
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
     setLoading(true);
     setError(null);
 
     try {
       const user = auth.currentUser;
       const headers = {};
+
       if (user) {
         const token = await user.getIdToken();
         headers.Authorization = `Bearer ${token}`;
@@ -59,80 +71,79 @@ function Dashboard() {
         `${import.meta.env.VITE_API_URL}/api/search?q=${encodeURIComponent(
           search
         )}&offset=${offset}`,
-        { headers }
+        {
+          headers,
+          signal: controller.signal,
+        }
       );
 
       if (!res.ok) throw new Error("Search failed");
+
       const data = await res.json();
 
-      if (!data.tracks || data.tracks.length === 0) {
+      if (!data?.tracks?.length) {
         setHasMore(false);
         return;
       }
 
-      const existing = new Set(results.map((t) => t.spotifyId));
-      const newTracks = data.tracks.filter((t) => !existing.has(t.spotifyId));
-
-      setResults((prev) => [...prev, ...newTracks]);
+      setResults((prev) => {
+        const existing = new Set(prev.map((t) => t.spotifyId));
+        const filtered = data.tracks.filter((t) => !existing.has(t.spotifyId));
+        return [...prev, ...filtered];
+      });
     } catch (err) {
-      console.error(err);
-      setError("Could not load tracks.");
+      if (err.name !== "AbortError") {
+        console.error(err);
+        setError("Failed to load tracks.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [search, offset, loading, hasMore, results]);
+  }, [search, offset, loading, hasMore]);
 
-  // Reset results on new search
+  //reset on search
   useEffect(() => {
     setResults([]);
     setOffset(0);
     setHasMore(true);
   }, [search]);
 
-  // Load more on scroll
+  //controlled scroll
   useEffect(() => {
     const handleScroll = () => {
       if (
         window.innerHeight + window.scrollY >=
           document.body.offsetHeight - 200 &&
         !loading &&
-        hasMore &&
-        offset < 200
+        hasMore
       ) {
         setOffset((prev) => prev + 20);
       }
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading, hasMore, offset]);
+  }, [loading, hasMore]);
 
-  // Debounce search
+  //debounce
   useEffect(() => {
     const delay = setTimeout(() => {
-      if (search.trim() && search.length > 2) {
-        searchSpotify();
-      }
-    }, 400);
+      if (search.length > 2) searchSpotify();
+    }, 500);
 
     return () => clearTimeout(delay);
   }, [search, searchSpotify]);
 
   return (
     <div className="dashboard">
-      <div className="search-container">
-        <input
-          className="search-input"
-          type="search"
-          placeholder="Search songs or artists..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <input
+        type="search"
+        placeholder="Search..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {!loading && results.length === 0 && search && (
-        <p className="empty-text">No results found.</p>
-      )}
+      {error && <p>{error}</p>}
 
       <div className="track-grid">
         {results.map((track) => (
@@ -144,13 +155,7 @@ function Dashboard() {
         ))}
       </div>
 
-      {loading && (
-        <div className="skeleton-grid">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="skeleton-card"></div>
-          ))}
-        </div>
-      )}
+      {loading && <p>Loading...</p>}
     </div>
   );
 }

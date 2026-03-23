@@ -28,7 +28,7 @@ export const searchTracks = async (query, offset = 0) => {
 
     const res = await axios.get("https://api.spotify.com/v1/search", {
       headers: { Authorization: `Bearer ${token}` },
-      params: { q: query, type: "track", limit: 20, offset },
+      params: { q: query, type: "track", limit: 35, offset },
     });
 
     const tracks = res.data.tracks.items.map((track) => ({

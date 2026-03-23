@@ -28,7 +28,6 @@ export const getRecommendations = async (req, res) => {
         return { ...track, score };
       });
 
-      // Sort and pick top 20
       return scoredTracks.sort((a, b) => b.score - a.score).slice(0, 20);
     });
 
