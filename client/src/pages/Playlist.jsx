@@ -9,10 +9,10 @@ import {
   query,
   where,
 } from "firebase/firestore";
-
 import NavBar from "../components/NavBar";
 import PlaylistCard from "../components/PlaylistCard";
 import { FaPlus } from "react-icons/fa";
+import "../css/Playlist.css";
 
 function Playlist() {
   const [playlists, setPlaylists] = useState([]);

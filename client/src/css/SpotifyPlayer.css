@@ -1,161 +1,185 @@
 .player-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-  
-    height: 80px;
-  
-    background: linear-gradient(90deg, #0a0a0a, #121212);
-  
-    border-top: 2px solid #f5c518;
-  
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  
-    padding: 10px 25px;
-  
-    box-shadow: 0 -3px 15px rgba(245, 197, 24, 0.25);
-  
-    z-index: 1000;
-  }
-  
-  /* album artwork */
-  
-  .player-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-  
-  .player-info img {
-    width: 55px;
-    height: 55px;
-    border-radius: 6px;
-  
-    box-shadow: 0 0 10px rgba(245, 197, 24, 0.5);
-  }
-  
-  /* track text */
-  
-  .player-info p:first-child {
-    font-weight: 600;
-    color: #ffffff;
-  }
-  
-  .player-info p:last-child {
-    font-size: 0.9rem;
-    color: #aaa;
-  }
-  
-  /* controls */
-  
-  .player-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  /* buttons */
-  
-  .player-controls button {
-    background: transparent;
-  
-    border: 2px solid #f5c518;
-    color: #f5c518;
-  
-    padding: 6px 14px;
-  
-    border-radius: 6px;
-  
-    font-size: 0.9rem;
-  
-    cursor: pointer;
-  
-    transition: all 0.2s ease;
-  }
-  
-  .player-controls button:hover {
-    background: #f5c518;
-    color: black;
-  
-    box-shadow: 0 0 10px #f5c518;
-  }
-  
-  /* glowing signal pulse */
-  
-  .player-bar::before {
-    content: "";
-  
-    position: absolute;
-  
-    top: -2px;
-    left: 0;
-  
-    width: 100%;
-    height: 2px;
-  
-    background: #f5c518;
-  
-    animation: signalPulse 3s infinite;
-  }
-  
-  @keyframes signalPulse {
-    0% {
-      opacity: 0.3;
-    }
-  
-    50% {
-      opacity: 1;
-    }
-  
-    100% {
-      opacity: 0.3;
-    }
-  }
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
 
-  .player-progress {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 40%;
-  }
-  
-  .player-progress span {
-    font-size: 0.75rem;
-    color: #aaa;
-    width: 40px;
-  }
-  
-  .player-progress input[type="range"] {
-    flex: 1;
-    appearance: none;
-    height: 4px;
-    background: #444;
-    border-radius: 2px;
-    outline: none;
-  }
-  
-  .player-progress input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #f5c518;
-    border-radius: 50%;
-    cursor: pointer;
-  }
+  height: 80px;
 
-  .player-volume {
-    color: #f5c518;
-  }
+  background: linear-gradient(90deg, #0a0a0a, #121212);
 
-  .player-queue {
-    font-size: 0.8rem;
-    color: #aaa;
-  }
-  
-  .player-queue p {
-    font-weight: bold;
-    color: #f5c518;
-  }
+  border-top: 2px solid #f5c518;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 25px;
+
+  box-shadow: 0 -3px 15px rgba(245, 197, 24, 0.25);
+
+  z-index: 1000;
+
+  overflow: hidden; /* ✅ fix glow */
+}
+
+/* glowing signal pulse */
+.player-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 2px;
+
+  background: #f5c518;
+
+  animation: signalPulse 3s infinite;
+}
+
+@keyframes signalPulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+/* album artwork */
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  min-width: 180px; /* ✅ prevent squish */
+}
+
+.player-info img {
+  width: 55px;
+  height: 55px;
+  border-radius: 6px;
+
+  object-fit: cover;
+
+  box-shadow: 0 0 10px rgba(245, 197, 24, 0.5);
+}
+
+/* track text */
+.player-info p:first-child {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.player-info p:last-child {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+/* controls */
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* buttons */
+.player-controls button {
+  background: transparent;
+
+  border: 2px solid #f5c518;
+  color: #f5c518;
+
+  padding: 6px 14px;
+
+  border-radius: 6px;
+
+  font-size: 0.9rem;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+
+  min-width: 60px; /* ✅ consistent size */
+}
+
+.player-controls button:hover {
+  background: #f5c518;
+  color: black;
+
+  box-shadow: 0 0 10px #f5c518;
+}
+
+/* progress bar */
+.player-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  flex: 1;              /* ✅ responsive */
+  max-width: 500px;
+}
+
+.player-progress span {
+  font-size: 0.75rem;
+  color: #aaa;
+  width: 40px;
+}
+
+/* progress track */
+.player-progress input[type="range"] {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  background: #444;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* progress thumb */
+.player-progress input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #f5c518;
+  border-radius: 50%;
+  cursor: pointer;
+
+  box-shadow: 0 0 8px #f5c518;
+}
+
+/* volume */
+.player-volume {
+  display: flex;
+  align-items: center;
+  color: #f5c518;
+}
+
+/* volume slider */
+.player-volume input[type="range"] {
+  appearance: none;
+  width: 100px;
+  height: 4px;
+  background: #444;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.player-volume input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #f5c518;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #f5c518;
+}
+
+/* optional queue */
+.player-queue {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.player-queue p {
+  font-weight: bold;
+  color: #f5c518;
+}

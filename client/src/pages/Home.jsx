@@ -12,7 +12,7 @@ function Home() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // 1️⃣ Store tokens from Spotify callback
+  //Store tokens from Spotify callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("access_token");
@@ -26,7 +26,7 @@ function Home() {
     }
   }, []);
 
-  // 2️⃣ Firebase auth listener
+  //Firebase auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -37,7 +37,7 @@ function Home() {
 
   const username = user?.email ? user.email.split("@")[0] : "Guest";
 
-  // 3️⃣ Helper to refresh access token if needed
+  // Helper to refresh access token if needed
   const getFreshAccessToken = async () => {
     const refreshToken = localStorage.getItem("spotifyRefreshToken");
     if (!refreshToken) return null;
@@ -103,7 +103,7 @@ function Home() {
                       ?.scrollIntoView({ behavior: "smooth" })
                   }
                 >
-                  🔍 Start Exploring
+                  Start Exploring
                 </button>
               </div>
 
