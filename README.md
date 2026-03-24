@@ -7,6 +7,20 @@ SignalFM is a full-stack music discovery platform designed to deliver personalis
 The application integrates external music data with user behaviour to create a dynamic and responsive user experience, focusing on performance, scalability, and clean system architecture.
 
 ---
+## 🎯 Key Highlights
+
+- Built full-stack application with scalable architecture  
+- Designed hybrid recommendation system (content + collaborative filtering)  
+- Implemented cache-first strategy improving performance and reducing API calls  
+- Integrated external APIs (Spotify) with real-time data processing  
+
+
+## 🚧 Project Status
+
+SignalFM is currently under active development.
+
+Core functionality including music search, playlist management, and recommendation logic is implemented. Ongoing work focuses on improving recommendation accuracy, performance optimisation, and scalability.
+
 
 ## ✨ Features
 
@@ -126,16 +140,16 @@ FIREBASE_CONFIG=your_config
 
 ## 📈 Future Improvements
 
-* Integrate Redis for distributed caching
-* Implement machine learning-based recommendation ranking
-* Add unit and integration testing (Jest)
-* Deploy with CI/CD pipeline
-* Improve scalability for high-traffic environments
+- Implement Redis-based distributed caching layer  
+- Enhance recommendation system with advanced ranking algorithms  
+- Introduce automated testing (Jest, integration tests)  
+- Deploy CI/CD pipeline for continuous delivery  
+- Improve scalability for high-traffic environments  
 ---
 
 ## 📸 Demo
 
-(Add screenshots or demo link here)
+Project is still undergoing development locally
 
 ---
 
@@ -162,13 +176,13 @@ This project is open-source and available under the MIT License.
 - Recommendation system is not yet fully optimised for large-scale datasets  
 - Caching is currently in-memory and not distributed  
 - No automated testing implemented yet
+
+## 🏗️ Architecture Diagram
+
+🚧 Diagram coming soon (will illustrate system components and data flow)
   
 Demo account login:
-demo@signalfm.test
-SignalFM123!
-reviewer@signalfm.test
-reviewer@signalfm.test
+demo@signalfm.test/ SignalFM123!
 
-npm install react-icons --save
+reviewer@signalfm.test / reviwer123
 
-https://signalfm-site.onrender.com render link
