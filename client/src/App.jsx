@@ -75,8 +75,10 @@ function App() {
 
           <Route path="/shared/:playlistId" element={<SharedPlaylist />} />
         </Routes>
-
-        <SpotifyPlayer />
+        {user && localStorage.getItem("spotify_refresh_token") && (
+          <SpotifyPlayer />
+        )}
+        {/*only show player if user is logged in and has Spotify tokens*/}
       </main>
     </PlayerProvider>
   );
