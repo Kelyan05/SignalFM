@@ -11,7 +11,7 @@ import SpotifyAuth from "./pages/SpotifyAuth.jsx";
 import SpotifyPlayer from "./components/SpotifyPlayer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
-import { auth } from "./config/firebase";
+import { auth } from "./config/firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { PlayerProvider } from "./context/PlayerProvider.jsx";

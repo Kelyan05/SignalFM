@@ -3,7 +3,7 @@ import { exchangeCodeForToken, refreshAccessToken } from "../utils/spotifyAuth.j
 // Redirect user to Spotify login
 export const spotifyLogin = (req, res) => {
   const scope =
-    "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state";
+  "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state user-read-playback-position";
   
   const authUrl =
     "https://accounts.spotify.com/authorize?" +

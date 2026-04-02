@@ -10,14 +10,15 @@ function SpotifyPlayer() {
   const [paused, setPaused] = useState(true);
 
   const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(1); // ✅ prevent divide issues
+  const [duration, setDuration] = useState(1);
   const [volume, setVolume] = useState(0.5);
-
-  const accessToken = localStorage.getItem("spotify_access_token");
 
   const lastPlayedTrack = useRef(null);
   const isPlayingRef = useRef(false);
+  const refreshPromise = useRef(null);
+  const reconnectTimeout = useRef(null);
 
+  // Format ms to mm:ss
   const formatTime = (ms = 0) => {
     const min = Math.floor(ms / 60000);
     const sec = Math.floor((ms % 60000) / 1000)
@@ -26,24 +27,69 @@ function SpotifyPlayer() {
     return `${min}:${sec}`;
   };
 
-  // INIT PLAYER
+  // Get valid access token, refreshing if needed
+  const getValidToken = async () => {
+    const storedToken = localStorage.getItem("spotify_access_token");
+    const expiry = localStorage.getItem("spotify_token_expiry");
+
+    if (storedToken && expiry && Date.now() < Number(expiry)) {
+      return storedToken;
+    }
+
+    if (refreshPromise.current) return refreshPromise.current;
+
+    refreshPromise.current = (async () => {
+      try {
+        const refreshToken = localStorage.getItem("spotify_refresh_token");
+
+        const res = await fetch(
+          `http://127.0.0.1:3001/api/spotify/token?refresh_token=${refreshToken}`
+        );
+
+        const data = await res.json();
+
+        if (!data.access_token) throw new Error("No token");
+
+        const expiresInMs = 55 * 60 * 1000;
+
+        localStorage.setItem("spotify_access_token", data.access_token);
+        localStorage.setItem("spotify_token_expiry", Date.now() + expiresInMs);
+
+        return data.access_token;
+      } catch (err) {
+        console.error("Token refresh failed:", err);
+        window.location.href = "/login";
+      } finally {
+        refreshPromise.current = null;
+      }
+    })();
+
+    return refreshPromise.current;
+  };
+
+  // Initialize Spotify Web Playback SDK
   useEffect(() => {
-    if (!accessToken || player) return;
+    if (player) return;
 
     const initPlayer = () => {
       const p = new window.Spotify.Player({
         name: "SignalFM Player",
-        getOAuthToken: (cb) => cb(accessToken),
+        getOAuthToken: async (cb) => {
+          const token = await getValidToken();
+          cb(token);
+        },
         volume: 0.5,
       });
 
       p.addListener("ready", async ({ device_id }) => {
         setDeviceId(device_id);
 
+        const token = await getValidToken();
+
         await fetch("https://api.spotify.com/v1/me/player", {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -51,6 +97,20 @@ function SpotifyPlayer() {
             play: false,
           }),
         });
+
+        // sync volume from player
+        p.getVolume().then(setVolume);
+      });
+
+      p.addListener("not_ready", () => {
+        console.warn("Player disconnected. Reconnecting...");
+
+        if (reconnectTimeout.current) return;
+
+        reconnectTimeout.current = setTimeout(() => {
+          p.connect();
+          reconnectTimeout.current = null;
+        }, 3000);
       });
 
       p.addListener("player_state_changed", (state) => {
@@ -61,7 +121,6 @@ function SpotifyPlayer() {
         setDuration(state.duration || 1);
 
         const track = state.track_window.current_track;
-
         if (!track) return;
 
         setCurrentTrack({
@@ -90,10 +149,11 @@ function SpotifyPlayer() {
     } else {
       initPlayer();
     }
-  }, [accessToken, player]);
+  }, [player]);
 
+  // play current track when it changes
   const playCurrentTrack = async () => {
-    if (!currentTrack || !deviceId || !accessToken) return;
+    if (!currentTrack || !deviceId) return;
 
     if (lastPlayedTrack.current === currentTrack.spotifyId) return;
     if (isPlayingRef.current) return;
@@ -101,12 +161,14 @@ function SpotifyPlayer() {
     isPlayingRef.current = true;
 
     try {
+      const token = await getValidToken();
+
       await fetch(
         `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -122,15 +184,36 @@ function SpotifyPlayer() {
 
     setTimeout(() => {
       isPlayingRef.current = false;
-    }, 1500);
+    }, 1200);
   };
 
   useEffect(() => {
     if (!deviceId || !currentTrack) return;
 
-    const timer = setTimeout(playCurrentTrack, 800);
+    const timer = setTimeout(playCurrentTrack, 500);
     return () => clearTimeout(timer);
   }, [currentTrack?.spotifyId, deviceId]);
+
+  // Seek function
+  const handleSeek = async (value) => {
+    setPosition(value);
+
+    try {
+      const token = await getValidToken();
+
+      await fetch(
+        `https://api.spotify.com/v1/me/player/seek?position_ms=${value}&device_id=${deviceId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (err) {
+      console.error("Seek failed", err);
+    }
+  };
 
   if (!currentTrack) return null;
 
@@ -156,7 +239,13 @@ function SpotifyPlayer() {
 
       <div className="player-progress">
         <span>{formatTime(position)}</span>
-        <input type="range" min="0" max={duration} value={position} readOnly />
+        <input
+          type="range"
+          min="0"
+          max={duration}
+          value={position}
+          onChange={(e) => handleSeek(Number(e.target.value))}
+        />
         <span>{formatTime(duration)}</span>
       </div>
 
@@ -170,7 +259,14 @@ function SpotifyPlayer() {
           onChange={(e) => {
             const v = Number(e.target.value);
             setVolume(v);
-            player?.setVolume(v);
+
+            if (player) {
+              try {
+                player.setVolume(v);
+              } catch {
+                console.warn("Volume error");
+              }
+            }
           }}
         />
       </div>
