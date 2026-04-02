@@ -1,22 +1,18 @@
 import admin from "firebase-admin";
 import { db } from "../config/firebaseAdmin.js";
 
-export const likeTrack = async (userId, trackId) => {
-  const engagementRef = db.collection("engagement").doc(trackId);
-  const userRef = db.collection("users").doc(userId);
+export const getEngagementData = async (trackIds) => {
+  const data = {};
 
-  await engagementRef.set(
-    {
-      likes: admin.firestore.FieldValue.increment(1),
-    },
-    { merge: true }
+  const docs = await Promise.all(
+    trackIds.map(id => db.collection("engagement").doc(id).get())
   );
 
-  await userRef.set(
-    {
-      likedTracks: admin.firestore.FieldValue.arrayUnion(trackId),
-      interactionCount: admin.firestore.FieldValue.increment(1),
-    },
-    { merge: true }
-  );
+  docs.forEach((doc, i) => {
+    if (doc.exists) {
+      data[trackIds[i]] = doc.data();
+    }
+  });
+
+  return data;
 };

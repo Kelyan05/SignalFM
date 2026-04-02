@@ -220,7 +220,7 @@ function SpotifyPlayer() {
   return (
     <div className="player-bar">
       <div className="player-info">
-        <img src={currentTrack.image || ""} alt={currentTrack.title} />
+        <img src={currentTrack.image} alt={currentTrack.title} />
         <div>
           <p>{currentTrack.title}</p>
           <p>{currentTrack.artist}</p>
