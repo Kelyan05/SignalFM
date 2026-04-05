@@ -5,7 +5,7 @@ export const getRecommendations = async (req, res) => {
     const { genre } = req.query;
     const userId = req.user.uid;
 
-    if (!genre) {
+    if (!genre) { // validates genre parameter
       return res.status(400).json({ error: "Genre required" });
     }
 
