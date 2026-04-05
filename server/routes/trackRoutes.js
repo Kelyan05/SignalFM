@@ -1,9 +1,9 @@
 import express from "express";
-import { likeTrackHandler } from "../controllers/trackController.js";
+import { recordTrackEvent } from "../controllers/trackController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/like", authMiddleware, likeTrackHandler);
+router.post("/event", authMiddleware, recordTrackEvent);
 
 export default router;

@@ -1,8 +1,10 @@
+// Dashboard.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import TrackSearchResult from "./TrackSearchResult.jsx";
 import "../css/Dashboard.css";
-import { auth, db } from "../config/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { auth, db } from "../config/firebase.js";
+import { collection, query, where, getDocs } from "firebase/firestore.js";
+import { getRecommendationsForUser } from "../services/recommendationService.js";
 
 function Dashboard() {
   const [search, setSearch] = useState("");
@@ -16,7 +18,7 @@ function Dashboard() {
   const controllerRef = useRef(null);
   const lastFetchTime = useRef(0);
 
-  //Fetch playlists safely
+  // Fetch playlists safely
   useEffect(() => {
     const fetchPlaylists = async () => {
       try {
@@ -38,20 +40,16 @@ function Dashboard() {
     fetchPlaylists();
   }, []);
 
-  //SEARCH FUNCTION
+  // --- SEARCH FUNCTION ---
   const searchSpotify = useCallback(async () => {
     if (!search.trim() || loading || !hasMore) return;
 
-    // 🔒 rate limit (1 request/sec)
+    // Rate limit: 1 request/sec
     const now = Date.now();
     if (now - lastFetchTime.current < 1000) return;
     lastFetchTime.current = now;
 
-    // cancel previous request
-    if (controllerRef.current) {
-      controllerRef.current.abort();
-    }
-
+    if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
 
@@ -80,7 +78,6 @@ function Dashboard() {
       if (!res.ok) throw new Error("Search failed");
 
       const data = await res.json();
-
       if (!data?.tracks?.length) {
         setHasMore(false);
         return;
@@ -101,14 +98,14 @@ function Dashboard() {
     }
   }, [search, offset, loading, hasMore]);
 
-  //reset on search
+  // Reset on search
   useEffect(() => {
     setResults([]);
     setOffset(0);
     setHasMore(true);
   }, [search]);
 
-  //controlled scroll
+  // Controlled scroll
   useEffect(() => {
     const handleScroll = () => {
       if (
@@ -125,7 +122,7 @@ function Dashboard() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loading, hasMore]);
 
-  //debounce
+  // Debounce search
   useEffect(() => {
     const delay = setTimeout(() => {
       if (search.length > 2) searchSpotify();
@@ -133,6 +130,35 @@ function Dashboard() {
 
     return () => clearTimeout(delay);
   }, [search, searchSpotify]);
+
+  //LIVE HYBRID RECOMMENDATIONS
+  const fetchRecommendations = useCallback(async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      // Example: genre could be dynamic based on user taste
+      const genre = "pop";
+      const recs = await getRecommendationsForUser(user.uid, genre);
+
+      setResults((prev) => {
+        const existing = new Set(prev.map((t) => t.spotifyId));
+        const filtered = recs.filter((t) => !existing.has(t.spotifyId));
+        return [...prev, ...filtered];
+      });
+    } catch (err) {
+      console.error("Recommendations error:", err);
+    }
+  }, []);
+
+  // Initial fetch and subscribe to live updates
+  useEffect(() => {
+    fetchRecommendations();
+
+    const handler = () => fetchRecommendations();
+    window.addEventListener("recommendationUpdate", handler);
+    return () => window.removeEventListener("recommendationUpdate", handler);
+  }, [fetchRecommendations]);
 
   return (
     <div className="dashboard">
@@ -155,7 +181,16 @@ function Dashboard() {
         ))}
       </div>
 
-      {loading && <p>Loading...</p>}
+      {loading &&
+        Array.from({ length: 5 }).map((_, i) => (
+          <div key={`skeleton-${i}`} className="track-skeleton">
+            <div className="skeleton-image" />
+            <div className="skeleton-text">
+              <div className="skeleton-line short" />
+              <div className="skeleton-line long" />
+            </div>
+          </div>
+        ))}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import admin from "firebase-admin";
 import { db } from "../config/firebaseAdmin.js";
 
 export const getEngagementData = async (trackIds) => {
