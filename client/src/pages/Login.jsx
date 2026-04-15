@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../config/firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
 import "../css/Login.css";
 
 function Login() {
@@ -22,7 +21,7 @@ function Login() {
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/home");
     } catch (err) {
-      setError("Incorrect email or password");
+      setError("Incorrect email or password.");
     }
   };
 
@@ -48,7 +47,6 @@ function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-
             <span
               className="eye-icon"
               onClick={() => setShowPassword((prev) => !prev)}
@@ -60,6 +58,13 @@ function Login() {
           {error && <p className="login-error">{error}</p>}
 
           <button className="btn">Login</button>
+
+          <p style={{ marginTop: 16, fontSize: 13, color: "#888" }}>
+            Don't have an account?{" "}
+            <Link to="/register" style={{ color: "#1db954" }}>
+              Create one
+            </Link>
+          </p>
         </form>
       </div>
     </div>

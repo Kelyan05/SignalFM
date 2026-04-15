@@ -1,121 +1,96 @@
-import { useEffect, useState, useContext, useRef } from "react";
-import { PlayerContext } from "../context/PlayerContext";
+import { useEffect, useRef, useState, useContext, useCallback } from "react";
+import { PlayerContext } from "../context/PlayerContext.jsx";
+import { auth } from "../config/firebase.js";
+import {
+  FaPlay,
+  FaPause,
+  FaStepForward,
+  FaStepBackward,
+  FaHeart,
+  FaRegHeart,
+  FaVolumeUp,
+  FaVolumeDown,
+  FaList,
+  FaTimes,
+} from "react-icons/fa";
+import { MdQueueMusic } from "react-icons/md";
 import "../css/SpotifyPlayer.css";
 
-function SpotifyPlayer({ ws }) {
-  const { currentTrack, setCurrentTrack, playNext } = useContext(PlayerContext);
+const SKIP_THRESHOLD_MS = 30_000;
 
-  const [player, setPlayer] = useState(null);
-  const [deviceId, setDeviceId] = useState(null);
-  const [paused, setPaused] = useState(true);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(1);
+export default function SpotifyPlayer() {
+  const { currentTrack, setDeviceId, queue, removeFromQueue } =
+    useContext(PlayerContext);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
   const [volume, setVolume] = useState(0.5);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
 
-  const lastPlayedTrack = useRef(null);
-  const isPlayingRef = useRef(false);
-  const refreshPromise = useRef(null);
-  const reconnectTimeout = useRef(null);
+  const playerRef = useRef(null);
+  const trackStartRef = useRef(null);
+  const prevTrackRef = useRef(null);
 
-  // FORMAT MS
-  const formatTime = (ms = 0) => {
-    const min = Math.floor(ms / 60000);
-    const sec = Math.floor((ms % 60000) / 1000)
-      .toString()
-      .padStart(2, "0");
-    return `${min}:${sec}`;
-  };
+  // ── HTTP event recorder ───────────────────────────────────────────────────
+  const recordEvent = useCallback(async (trackId, action) => {
+    if (!trackId) return;
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+      await fetch(`${import.meta.env.VITE_API_URL}/api/track/event`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ trackId, action }),
+      });
+    } catch (err) {
+      console.error("recordEvent failed:", err);
+    }
+  }, []);
 
-  // GET TOKEN
-  const getValidToken = async () => {
-    const storedToken = localStorage.getItem("spotify_access_token");
-    const expiry = localStorage.getItem("spotify_token_expiry");
-    if (storedToken && expiry && Date.now() < Number(expiry))
-      return storedToken;
-
-    if (refreshPromise.current) return refreshPromise.current;
-
-    refreshPromise.current = (async () => {
-      const refreshToken = localStorage.getItem("spotify_refresh_token");
-      const res = await fetch(
-        `http://127.0.0.1:3001/api/spotify/token?refresh_token=${refreshToken}`
-      );
-      const data = await res.json();
-      localStorage.setItem("spotify_access_token", data.access_token);
-      localStorage.setItem("spotify_token_expiry", Date.now() + 55 * 60 * 1000);
-      refreshPromise.current = null;
-      return data.access_token;
-    })();
-
-    return refreshPromise.current;
-  };
-
-  // INITIALIZE PLAYER
+  // ── Spotify Web Playback SDK ──────────────────────────────────────────────
   useEffect(() => {
-    if (player) return;
-    const initPlayer = () => {
-      const p = new window.Spotify.Player({
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const token = localStorage.getItem("spotify_access_token");
+      if (!token) return;
+
+      const player = new window.Spotify.Player({
         name: "SignalFM Player",
-        getOAuthToken: async (cb) => cb(await getValidToken()),
-        volume: 0.5,
+        getOAuthToken: (cb) => cb(token),
+        volume,
       });
 
-      p.addListener("ready", async ({ device_id }) => {
+      player.addListener("ready", ({ device_id }) => {
         setDeviceId(device_id);
-        const token = await getValidToken();
-        await fetch("https://api.spotify.com/v1/me/player", {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ device_ids: [device_id], play: false }),
-        });
-        p.getVolume().then(setVolume);
+        setPlayerReady(true);
       });
 
-      p.addListener("not_ready", () => {
-        if (reconnectTimeout.current) return;
-        reconnectTimeout.current = setTimeout(() => {
-          p.connect();
-          reconnectTimeout.current = null;
-        }, 3000);
-      });
+      player.addListener("not_ready", () => setPlayerReady(false));
 
-      p.addListener("player_state_changed", (state) => {
+      player.addListener("player_state_changed", (state) => {
         if (!state) return;
-        setPaused(state.paused);
-        setPosition(state.position || 0);
-        setDuration(state.duration || 1);
+        const newTrackId = state.track_window?.current_track?.id;
+        setIsPlaying(!state.paused);
 
-        const track = state.track_window.current_track;
-        if (!track) return;
-
-        setCurrentTrack({
-          spotifyId: track.id,
-          title: track.name,
-          artist: track.artists?.[0]?.name || "Unknown",
-          image: track.album?.images?.[0]?.url || "",
-        });
-
-        // send WebSocket update for play/skip
-        if (ws && track.id !== lastPlayedTrack.current) {
-          ws.send(
-            JSON.stringify({
-              type: "recommendationUpdate",
-              action: state.paused ? "skip" : "play",
-              trackId: track.id,
-            })
-          );
-        }
-
-        if (state.paused && state.position === state.duration) {
-          playNext();
+        if (newTrackId && newTrackId !== prevTrackRef.current) {
+          if (prevTrackRef.current && trackStartRef.current) {
+            const elapsed = Date.now() - trackStartRef.current;
+            recordEvent(
+              prevTrackRef.current,
+              elapsed < SKIP_THRESHOLD_MS ? "skip" : "play"
+            );
+          }
+          prevTrackRef.current = newTrackId;
+          trackStartRef.current = Date.now();
+          setIsLiked(false);
         }
       });
 
-      p.connect();
-      setPlayer(p);
+      player.connect();
+      playerRef.current = player;
     };
 
     if (!window.Spotify) {
@@ -123,93 +98,170 @@ function SpotifyPlayer({ ws }) {
       script.src = "https://sdk.scdn.co/spotify-player.js";
       script.async = true;
       document.body.appendChild(script);
-      window.onSpotifyWebPlaybackSDKReady = initPlayer;
-    } else initPlayer();
-  }, [player, ws]);
-
-  // SEEK
-  const handleSeek = async (value) => {
-    setPosition(value);
-    try {
-      const token = await getValidToken();
-      await fetch(
-        `https://api.spotify.com/v1/me/player/seek?position_ms=${value}&device_id=${deviceId}`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-    } catch (err) {
-      console.error(err);
+    } else {
+      window.onSpotifyWebPlaybackSDKReady();
     }
+
+    return () => playerRef.current?.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Controls ──────────────────────────────────────────────────────────────
+  const handlePlayPause = () => playerRef.current?.togglePlay();
+
+  const handleSkip = () => {
+    if (prevTrackRef.current) recordEvent(prevTrackRef.current, "skip");
+    playerRef.current?.nextTrack();
   };
 
-  // VOLUME
-  const handleVolume = (v) => {
+  const handlePrev = () => playerRef.current?.previousTrack();
+
+  const handleLike = () => {
+    if (!prevTrackRef.current) return;
+    recordEvent(prevTrackRef.current, isLiked ? "unlike" : "like");
+    setIsLiked((prev) => !prev);
+  };
+
+  const handleVolume = (e) => {
+    const v = parseFloat(e.target.value);
     setVolume(v);
-    if (player) player.setVolume(v);
+    playerRef.current?.setVolume(v);
   };
 
   if (!currentTrack) return null;
 
   return (
-    <div className="player-bar">
-      <div className="player-info">
-        <img src={currentTrack.image || ""} alt={currentTrack.title} />
-        <div>
-          <p>{currentTrack.title}</p>
-          <p>{currentTrack.artist}</p>
+    <>
+      <div className="spotify-player">
+        {/* Track info */}
+        <div className="player-track-info">
+          {currentTrack.albumUrl && (
+            <img
+              src={currentTrack.albumUrl}
+              alt={currentTrack.title}
+              className="player-album-art"
+            />
+          )}
+          <div className="player-meta">
+            <span className="player-title">{currentTrack.title}</span>
+            <span className="player-artist">{currentTrack.artist}</span>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="player-controls">
+          <button
+            className="player-btn"
+            onClick={handlePrev}
+            disabled={!playerReady}
+            title="Previous"
+          >
+            <FaStepBackward />
+          </button>
+
+          <button
+            className="player-btn player-btn--primary"
+            onClick={handlePlayPause}
+            disabled={!playerReady}
+            title={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <FaPause /> : <FaPlay />}
+          </button>
+
+          <button
+            className="player-btn"
+            onClick={handleSkip}
+            disabled={!playerReady}
+            title="Skip"
+          >
+            <FaStepForward />
+          </button>
+
+          <button
+            className={`player-btn${isLiked ? " player-btn--liked" : ""}`}
+            onClick={handleLike}
+            disabled={!playerReady}
+            title={isLiked ? "Unlike" : "Like"}
+          >
+            {isLiked ? <FaHeart /> : <FaRegHeart />}
+          </button>
+        </div>
+
+        {/* Volume + queue toggle */}
+        <div className="player-right">
+          <div className="player-volume">
+            <FaVolumeDown className="volume-icon" />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              onChange={handleVolume}
+              className="player-volume-slider"
+              title="Volume"
+            />
+            <FaVolumeUp className="volume-icon" />
+          </div>
+
+          <button
+            className={`player-btn player-btn--queue${
+              showQueue ? " player-btn--queue-active" : ""
+            }`}
+            onClick={() => setShowQueue((prev) => !prev)}
+            title="Queue"
+          >
+            <MdQueueMusic />
+            {queue.length > 0 && (
+              <span className="queue-badge">{queue.length}</span>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="player-controls">
-        <button onClick={() => player?.previousTrack()}>Prev</button>
-        <button onClick={() => player?.togglePlay()}>
-          {paused ? "Play" : "Pause"}
-        </button>
-        <button onClick={() => player?.nextTrack()}>Next</button>
-        <button
-          onClick={async () => {
-            // Like track
-            if (ws && currentTrack) {
-              ws.send(
-                JSON.stringify({
-                  type: "recommendationUpdate",
-                  action: "like",
-                  trackId: currentTrack.spotifyId,
-                })
-              );
-            }
-          }}
-        >
-          Like
-        </button>
-      </div>
+      {/* Queue panel */}
+      {showQueue && (
+        <div className="queue-panel">
+          <div className="queue-panel-header">
+            <span>
+              <FaList style={{ marginRight: 8 }} />
+              Up next ({queue.length})
+            </span>
+            <button
+              className="queue-close-btn"
+              onClick={() => setShowQueue(false)}
+            >
+              <FaTimes />
+            </button>
+          </div>
 
-      <div className="player-progress">
-        <span>{formatTime(position)}</span>
-        <input
-          type="range"
-          min="0"
-          max={duration}
-          value={position}
-          onChange={(e) => handleSeek(Number(e.target.value))}
-        />
-        <span>{formatTime(duration)}</span>
-      </div>
-
-      <div className="player-volume">
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={volume}
-          onChange={(e) => handleVolume(Number(e.target.value))}
-        />
-      </div>
-    </div>
+          {queue.length === 0 ? (
+            <p className="queue-empty">Your queue is empty</p>
+          ) : (
+            <ul className="queue-list">
+              {queue.map((t, i) => (
+                <li key={`${t.spotifyId}-${i}`} className="queue-item">
+                  <img
+                    src={t.albumUrl || "https://via.placeholder.com/40"}
+                    alt={t.title}
+                    className="queue-item-art"
+                  />
+                  <div className="queue-item-info">
+                    <span className="queue-item-title">{t.title}</span>
+                    <span className="queue-item-artist">{t.artist}</span>
+                  </div>
+                  <button
+                    className="queue-item-remove"
+                    onClick={() => removeFromQueue(i)}
+                    title="Remove"
+                  >
+                    <FaTimes />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </>
   );
 }
-
-export default SpotifyPlayer;
