@@ -1,8 +1,8 @@
+/* ── Dashboard container ────────────────────────────────────── */
 .dashboard-container {
   padding: 1rem;
-  max-width: 1000px;
+  max-width: 1100px;
   margin: auto;
-  font-family: sans-serif;
   overflow: visible;
 }
 
@@ -30,60 +30,198 @@
   margin-bottom: 2rem;
 }
 
+/* ── Recommendations section ────────────────────────────────── */
+.recommendations-section {
+  padding: 8px 0 40px;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.rec-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.rec-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.rec-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #535353;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ── Genre pills ────────────────────────────────────────────── */
+.genre-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.genre-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #161616;
+  border: 1px solid #242424;
+  border-radius: 100px;
+  color: #888;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
+  white-space: nowrap;
+}
+
+.genre-pill:hover {
+  border-color: #3a3a3a;
+  color: #ccc;
+  transform: translateY(-1px);
+}
+
+.genre-pill.active {
+  background: #1db954;
+  border-color: #1db954;
+  color: #000;
+}
+
+.genre-pill-icon {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Track grid ─────────────────────────────────────────────── */
 .track-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
   overflow: visible;
 }
 
-.track-skeleton {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 6px;
-  background: #1e1e1e;
-  margin-bottom: 8px;
-  animation: pulse 1.2s infinite;
+/* Staggered entrance animation wrapper */
+.track-card-wrapper {
+  animation: cardReveal 0.35s ease both;
 }
 
-.skeleton-image {
-  width: 60px;
-  height: 60px;
-  background: #333;
-  border-radius: 4px;
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.skeleton-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* ── Skeleton card ──────────────────────────────────────────── */
+.skeleton-card {
+  background: #161616;
+  border-radius: 14px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.skeleton-art {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  background: #222;
+  margin-bottom: 12px;
+  animation: shimmer 1.4s ease-in-out infinite;
 }
 
 .skeleton-line {
-  height: 12px;
-  background: #333;
-  border-radius: 4px;
+  height: 11px;
+  border-radius: 6px;
+  background: #222;
+  margin-bottom: 8px;
+  animation: shimmer 1.4s ease-in-out infinite;
 }
 
-.skeleton-line.short {
-  width: 40%;
+.skeleton-line.long  { width: 75%; }
+.skeleton-line.short { width: 45%; }
+
+@keyframes shimmer {
+  0%   { background-color: #1c1c1c; }
+  50%  { background-color: #2a2a2a; }
+  100% { background-color: #1c1c1c; }
 }
 
-.skeleton-line.long {
-  width: 70%;
+/* ── Error / empty feedback ─────────────────────────────────── */
+.rec-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 20px;
+  text-align: center;
+  gap: 10px;
 }
 
-@keyframes pulse {
-  0% {
-    background-color: #333;
+.rec-feedback-icon {
+  font-size: 36px;
+  color: #2a2a2a;
+  margin-bottom: 8px;
+}
+
+.rec-feedback p,
+.rec-feedback-title {
+  color: #888;
+  font-size: 15px;
+  margin: 0;
+}
+
+.rec-feedback-sub {
+  color: #535353;
+  font-size: 13px;
+  margin: 0;
+}
+
+.rec-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  background: #1db954;
+  color: #000;
+  font-weight: 700;
+  font-size: 13px;
+  border: none;
+  border-radius: 100px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.12s;
+}
+
+.rec-retry-btn:hover {
+  background: #1ed760;
+  transform: scale(1.03);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .genre-pills {
+    gap: 6px;
   }
-  50% {
-    background-color: #444;
+
+  .genre-pill {
+    font-size: 12px;
+    padding: 7px 13px;
   }
-  100% {
-    background-color: #333;
+
+  .track-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
   }
 }
