@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { auth, db } from "../config/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export const usePlaylists = () => {
   const [playlists, setPlaylists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetch = async () => {
+  const fetchPlaylists = useCallback(async () => {
+    try {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        setPlaylists([]);
+        return;
+      }
+
+      setLoading(true);
 
       const q = query(
         collection(db, "playlists"),
@@ -16,11 +23,27 @@ export const usePlaylists = () => {
       );
 
       const snap = await getDocs(q);
-      setPlaylists(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    };
 
-    fetch();
+      setPlaylists(
+        snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
+    } catch (err) {
+      console.error("Playlist fetch error:", err);
+      setError("Failed to load playlists");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { playlists, setPlaylists };
+  useEffect(() => {
+    fetchPlaylists();
+  }, [fetchPlaylists]);
+
+  return {
+    playlists,
+    setPlaylists,    
+    loading,
+    error,
+    refresh: fetchPlaylists,
+  };
 };

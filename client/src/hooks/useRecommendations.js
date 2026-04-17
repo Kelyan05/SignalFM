@@ -1,43 +1,80 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { auth } from "../config/firebase";
 
-export const useRecommendations = () => {
+export const useRecommendations = (genre = "pop") => {
+  // genre cache: { pop: [...], rap: [...] }
+  const cacheRef = useRef({});
+
   const [tracks, setTracks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const fetchRecommendations = async () => {
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const token = await user.getIdToken();
-
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/recommendations`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+  const fetchRecommendations = useCallback(
+    async (force = false) => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setError("Not logged in");
+          return;
         }
-      );
 
-      const data = await res.json();
-      setTracks(data.recommendations || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        // return cached data instantly 
+        if (!force && cacheRef.current[genre]) {
+          setTracks(cacheRef.current[genre]);
+          return;
+        }
 
+        setLoading(true);
+        setError(null);
+
+        const token = await user.getIdToken();
+
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/recommendations?genre=${genre}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch recommendations");
+
+        const data = await res.json();
+        const newTracks = data.recommendations || [];
+
+        // overwrite cache 
+        cacheRef.current = {
+          ...cacheRef.current,
+          [genre]: newTracks,
+        };
+
+        // update UI
+        setTracks(newTracks);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load recommendations");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [genre]
+  );
+
+  // auto-fetch when genre changes
   useEffect(() => {
-    fetchRecommendations();
+    fetchRecommendations(false);
+  }, [fetchRecommendations]);
 
-    const handler = () => fetchRecommendations();
-    window.addEventListener("recommendationUpdate", handler);
+  return {
+    tracks,
+    loading,
+    error,
 
-    return () => window.removeEventListener("recommendationUpdate", handler);
-  }, []);
+    // normal refresh = uses cache if available
+    refresh: () => fetchRecommendations(false),
 
-  return { tracks, loading, refresh: fetchRecommendations };
+    // force refresh = ALWAYS hits backend
+    forceRefresh: () => fetchRecommendations(true),
+  };
 };
