@@ -12,6 +12,7 @@ export function useSpotifySearch() {
   const controllerRef = useRef(null);
   const lastFetch = useRef(0);
 
+  // 🔍 SEARCH FUNCTION
   const searchSpotify = useCallback(async () => {
     if (!search.trim() || loading || !hasMore) return;
 
@@ -24,6 +25,7 @@ export function useSpotifySearch() {
     controllerRef.current = controller;
 
     setLoading(true);
+    setError(null);
 
     try {
       const user = auth.currentUser;
@@ -34,15 +36,33 @@ export function useSpotifySearch() {
       }
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/search?q=${search}&offset=${offset}`,
+        `${import.meta.env.VITE_API_URL}/api/search?q=${encodeURIComponent(search)}&offset=${offset}`,
         { headers, signal: controller.signal }
       );
 
-      const data = await res.json();
+      if (!res.ok) throw new Error("Search failed");
 
-      setResults(prev => [...prev, ...(data.tracks || [])]);
+      const data = await res.json();
+      const newTracks = data.tracks || [];
+
+      // ✅ FIX: dedupe tracks
+      setResults((prev) => {
+        const existing = new Set(prev.map((t) => t.spotifyId));
+
+        return [
+          ...prev,
+          ...newTracks.filter((t) => !existing.has(t.spotifyId)),
+        ];
+      });
+
+      // ✅ FIX: stop infinite scroll when no more results
+      if (newTracks.length === 0) {
+        setHasMore(false);
+      }
+
     } catch (err) {
       if (err.name !== "AbortError") {
+        console.error(err);
         setError("Search failed");
       }
     } finally {
@@ -50,6 +70,14 @@ export function useSpotifySearch() {
     }
   }, [search, offset, loading, hasMore]);
 
+  // 🔁 RESET when search changes
+  useEffect(() => {
+    setResults([]);
+    setOffset(0);
+    setHasMore(true);
+  }, [search]);
+
+  // ⏱️ DEBOUNCE
   useEffect(() => {
     if (search.length > 2) {
       const t = setTimeout(searchSpotify, 400);
@@ -57,19 +85,22 @@ export function useSpotifySearch() {
     }
   }, [search, searchSpotify]);
 
+  // 📜 INFINITE SCROLL (FIXED)
   useEffect(() => {
     const onScroll = () => {
       if (
         window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 200
+          document.body.offsetHeight - 200 &&
+        !loading &&
+        hasMore
       ) {
-        setOffset(o => o + 20);
+        setOffset((o) => o + 20);
       }
     };
 
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [loading, hasMore]);
 
   return {
     search,

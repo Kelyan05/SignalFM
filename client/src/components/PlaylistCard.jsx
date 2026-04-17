@@ -14,19 +14,13 @@ function PlaylistCard({
 
   const saveName = () => {
     if (!name.trim()) return;
-
     onRename(playlist.id, name.trim());
     setEditing(false);
   };
 
   const getPlaylistCover = () => {
-    if (!playlist.tracks || playlist.tracks.length === 0) {
-      return "/default-playlist.png";
-    }
-
-    if (playlist.tracks.length === 1) {
-      return playlist.tracks[0].albumUrl || "/default-playlist.png";
-    }
+    if (!playlist.tracks?.length) return "/default-playlist.png";
+    if (playlist.tracks.length === 1) return playlist.tracks[0].albumUrl;
 
     return null;
   };
@@ -51,7 +45,7 @@ function PlaylistCard({
               {playlist.tracks.slice(0, 4).map((track) => (
                 <img
                   key={track.spotifyId}
-                  src={track.albumUrl || "/default-playlist.png"}
+                  src={track.albumUrl}
                   alt={track.title}
                 />
               ))}
@@ -60,13 +54,8 @@ function PlaylistCard({
         </div>
 
         <div className="playlist-actions">
-          <button className="share-btn" onClick={() => onShare(playlist.id)}>
-            Share
-          </button>
-
-          <button className="delete-btn" onClick={() => onDelete(playlist.id)}>
-            Delete
-          </button>
+          <button onClick={() => onShare(playlist.id)}>Share</button>
+          <button onClick={() => onDelete(playlist.id)}>Delete</button>
         </div>
       </div>
 
@@ -75,7 +64,7 @@ function PlaylistCard({
           <TrackCard
             key={track.spotifyId}
             track={track}
-            onRemove={(spotifyId) => onRemoveTrack(playlist.id, spotifyId)}
+            onRemove={(id) => onRemoveTrack(playlist.id, id)}
           />
         ))}
       </div>
