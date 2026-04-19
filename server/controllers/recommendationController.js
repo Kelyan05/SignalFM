@@ -1,33 +1,43 @@
-import { getRecommendationsForUser, invalidateUserCache } from "../services/recommendationService.js";
+import {
+  getRecommendationsForUser,
+  invalidateUserCache,
+} from "../services/recommendationService.js";
 
+/**
+ * GET /api/recommendations?genre=pop
+ * Returns up to 20 scored, artist-diverse recommendations for the user.
+ */
 export const getRecommendations = async (req, res) => {
   try {
     const { genre } = req.query;
-    const userId = req.user.uid;
+    const userId    = req.user.uid;
 
     if (!genre) {
-      return res.status(400).json({ error: "Genre required" });
+      return res.status(400).json({ error: "genre query param is required" });
     }
 
     const recommendations = await getRecommendationsForUser(userId, genre);
-    res.json({ recommendations });
+
+    // Always return { recommendations: [...] } so the frontend shape is stable
+    return res.json({ recommendations });
   } catch (err) {
-    console.error("Recommendation error:", err.message);
-    res.status(500).json({ error: "Failed to fetch recommendations" });
+    console.error("[recommendationController] getRecommendations:", err.message);
+    return res.status(500).json({ error: "Failed to fetch recommendations" });
   }
 };
 
-// POST /api/recommendations/invalidate
-// Secondary invalidation endpoint — the primary path is trackController
-// calling invalidateUserCache directly after every interaction.
-// This endpoint exists as a fallback for the frontend to call explicitly
-// if it needs to force a refresh (e.g. after a batch interaction).
+/**
+ * POST /api/recommendations/invalidate
+ * Explicit cache bust — called by the frontend when it needs a forced refresh.
+ * The primary invalidation path is trackController calling invalidateUserCache
+ * directly after every interaction event.
+ */
 export const invalidateRecommendations = async (req, res) => {
   try {
     invalidateUserCache(req.user.uid);
-    res.json({ ok: true });
+    return res.json({ ok: true });
   } catch (err) {
-    console.error("Cache invalidation error:", err.message);
-    res.status(500).json({ error: "Failed to invalidate cache" });
+    console.error("[recommendationController] invalidate:", err.message);
+    return res.status(500).json({ error: "Failed to invalidate cache" });
   }
 };

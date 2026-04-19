@@ -1,58 +1,44 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { auth } from "../config/firebase";
 
-export const useRecommendations = (genre = "pop") => {
-  // genre cache: { pop: [...], rap: [...] }
-  const cacheRef = useRef({});
+const API = import.meta.env.VITE_API_URL;
 
-  const [tracks, setTracks] = useState([]);
+/**
+ * useRecommendations
+ * Fetches genre-filtered recommendations from the backend.
+ * Re-fetches automatically when `genre` changes.
+ * `refresh(true)` busts the server-side cache via the ?refresh flag.
+ *
+ * Backend returns: { recommendations: Track[] }
+ */
+export function useRecommendations(genre) {
+  const [tracks, setTracks]   = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   const fetchRecommendations = useCallback(
-    async (force = false) => {
+    async (forceRefresh = false) => {
+      const user = auth.currentUser;
+      if (!user || !genre) return;
+
+      setLoading(true);
+      setError(null);
+
       try {
-        const user = auth.currentUser;
-        if (!user) {
-          setError("Not logged in");
-          return;
-        }
-
-        // return cached data instantly 
-        if (!force && cacheRef.current[genre]) {
-          setTracks(cacheRef.current[genre]);
-          return;
-        }
-
-        setLoading(true);
-        setError(null);
-
         const token = await user.getIdToken();
+        const url   = `${API}/api/recommendations?genre=${genre}${forceRefresh ? "&refresh=true" : ""}`;
 
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/recommendations?genre=${genre}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res  = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        if (!res.ok) throw new Error("Failed to fetch recommendations");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const data = await res.json();
-        const newTracks = data.recommendations || [];
-
-        // overwrite cache 
-        cacheRef.current = {
-          ...cacheRef.current,
-          [genre]: newTracks,
-        };
-
-        // update UI
-        setTracks(newTracks);
+        // Backend returns { recommendations: [...] }
+        const { recommendations } = await res.json();
+        setTracks(recommendations ?? []);
       } catch (err) {
-        console.error(err);
+        console.error("[useRecommendations]", err.message);
         setError("Failed to load recommendations");
       } finally {
         setLoading(false);
@@ -61,20 +47,15 @@ export const useRecommendations = (genre = "pop") => {
     [genre]
   );
 
-  // auto-fetch when genre changes
+  // Fetch on mount and whenever genre changes
   useEffect(() => {
-    fetchRecommendations(false);
+    fetchRecommendations();
   }, [fetchRecommendations]);
 
   return {
     tracks,
     loading,
     error,
-
-    // normal refresh = uses cache if available
-    refresh: () => fetchRecommendations(false),
-
-    // force refresh = ALWAYS hits backend
-    forceRefresh: () => fetchRecommendations(true),
+    refresh: () => fetchRecommendations(true),
   };
-};
+}
