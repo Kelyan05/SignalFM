@@ -1,7 +1,7 @@
 import TrackSearchResult from "../components/TrackSearchResult.jsx";
 import "../css/Dashboard.css";
 import { useSpotifySearch } from "../hooks/useSpotifySearch";
-import { usePlaylists } from "../hooks/usePlaylists"; // you should have this
+import { usePlaylists } from "../hooks/usePlaylists";
 
 function Dashboard() {
   const { search, setSearch, results, loading, error } = useSpotifySearch();
@@ -10,7 +10,6 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* 🔍 Search */}
       <div className="dashboard-search-wrap">
         <input
           type="search"
@@ -21,10 +20,7 @@ function Dashboard() {
         />
       </div>
 
-      {/* ❌ Error */}
       {error && <p className="dashboard-error">{error}</p>}
-
-      {/* 🎵 Results */}
       <div className="track-grid">
         {results.map((track) => (
           <TrackSearchResult
@@ -36,7 +32,6 @@ function Dashboard() {
         ))}
       </div>
 
-      {/* ⏳ Loading skeleton */}
       {loading && (
         <div className="track-grid">
           {Array.from({ length: 5 }).map((_, i) => (

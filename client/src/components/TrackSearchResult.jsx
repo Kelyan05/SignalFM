@@ -1,99 +1,63 @@
-import { useContext, useState, useRef, useEffect } from "react";
+import { useContext } from "react";
 import { PlayerContext } from "../context/PlayerContext";
 import { useTrackEvents } from "../hooks/useTrackEvents";
+import { normalizeTrack } from "../utils/normalizeTrack";
+import { useLikedTracks } from "../context/LikedTracksProvider";
 
-import { FaPlusCircle, FaHeart, FaPlay, FaList } from "react-icons/fa";
-import "../css/TrackSearchResult.css";
+import { FaHeart, FaRegHeart, FaPlay, FaList } from "react-icons/fa";
 
-function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
+function TrackSearchResult({ track }) {
   const { setCurrentTrack, addToQueue } = useContext(PlayerContext);
-  const { recordEvent } = useTrackEvents();
+  const { like, unlike, queue: queueEvent } = useTrackEvents();
+  const { isLiked, fetchLikedTracks } = useLikedTracks();
 
-  const [liked, setLiked] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+  const liked = isLiked(track.spotifyId);
 
   const handleLike = async () => {
-    const action = liked ? "unlike" : "like";
+    if (liked) {
+      await unlike(track.spotifyId);
+    } else {
+      await like(track.spotifyId);
+    }
 
-    await recordEvent(track.spotifyId, action);
-
-    setLiked(!liked);
-
-    window.dispatchEvent(new Event("recommendationUpdate"));
+    await fetchLikedTracks(); // global sync
   };
 
-  // Dropdown toggle
-  const handleToggleDropdown = (e) => {
-    e.stopPropagation();
-    setShowDropdown((prev) => !prev);
+  const handlePlay = () => {
+    setCurrentTrack(normalizeTrack(track));
   };
 
-  // Click outside close
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  const handleQueue = () => {
+    const safe = normalizeTrack(track);
+    addToQueue(safe);
+    queueEvent(safe.spotifyId);
+  };
 
   return (
     <div className="track-card">
       <img
-        src={track.albumUrl || track.image || "https://via.placeholder.com/200"}
+        src={track.albumUrl}
         className="track-image"
-        onClick={() => setCurrentTrack(track)}
+        alt={track.title}
+        onClick={handlePlay}
       />
 
       <div className="track-info">
-        <div className="track-title">{track.title}</div>
-        <div className="track-artist">{track.artist}</div>
+        <div>{track.title}</div>
+        <div>{track.artist}</div>
       </div>
 
       <div className="track-actions">
-        <button onClick={() => setCurrentTrack(track)}>
+        <button onClick={handlePlay}>
           <FaPlay />
         </button>
-
-        <button onClick={() => addToQueue(track)}>
+        <button onClick={handleQueue}>
           <FaList />
         </button>
 
         <button onClick={handleLike}>
-          {liked ? <FaHeart color="red" /> : <FaHeart />}
+          {liked ? <FaHeart color="red" /> : <FaRegHeart />}
         </button>
-
-        {/* Playlist dropdown */}
-        <div className="playlist-dropdown-wrapper" ref={dropdownRef}>
-          <button onClick={handleToggleDropdown}>
-            <FaPlusCircle />
-          </button>
-
-          {showDropdown && (
-            <div className="playlist-dropdown">
-              {playlists.length > 0 ? (
-                playlists.map((p) => (
-                  <div
-                    key={p.id}
-                    className="playlist-option"
-                    onClick={() => {
-                      onAddToPlaylist?.(p.id, track);
-                      setShowDropdown(false);
-                    }}
-                  >
-                    {p.name}
-                  </div>
-                ))
-              ) : (
-                <div className="playlist-option disabled">No playlists</div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

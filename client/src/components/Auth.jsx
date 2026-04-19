@@ -28,6 +28,7 @@ export const Auth = () => {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
       setError("Invalid email or password", err);
+      console.error("Login error:", err);
     }
   };
 

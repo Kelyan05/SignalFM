@@ -6,27 +6,36 @@ export function PlayerProvider({ children }) {
   const [deviceId, setDeviceId] = useState(null);
   const [queue, setQueue] = useState([]);
 
+  // ── Add to queue ──
   const addToQueue = useCallback((track) => {
+    if (!track?.spotifyId) {
+      console.warn("Invalid track (missing spotifyId):", track);
+      return;
+    }
+
     setQueue((prev) => {
       if (prev.some((t) => t.spotifyId === track.spotifyId)) return prev;
       return [...prev, track];
     });
   }, []);
 
+  // ── Remove from queue ──
   const removeFromQueue = useCallback((index) => {
     setQueue((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  // ── Play a track via Spotify API ──
   const playTrack = useCallback(
     async (track) => {
-      if (!deviceId) {
-        console.warn("No device ID yet");
+      if (!track?.spotifyId) {
+        console.error("playTrack: invalid track", track);
         return;
       }
 
       const token = localStorage.getItem("spotify_access_token");
-      if (!token) {
-        console.warn("No Spotify token");
+
+      if (!token || !deviceId) {
+        console.warn("Missing token or deviceId");
         return;
       }
 
@@ -53,6 +62,23 @@ export function PlayerProvider({ children }) {
     [deviceId]
   );
 
+  // ── Play next track in queue ──
+  const playNext = useCallback(() => {
+    setQueue((prev) => {
+      if (prev.length === 0) return prev;
+
+      const [next, ...rest] = prev;
+
+      if (next?.spotifyId) {
+        playTrack(next);
+      } else {
+        console.warn("Skipping invalid queue item:", next);
+      }
+
+      return rest;
+    });
+  }, [playTrack]);
+
   return (
     <PlayerContext.Provider
       value={{
@@ -61,9 +87,10 @@ export function PlayerProvider({ children }) {
         deviceId,
         setDeviceId,
         queue,
-        playTrack,
         addToQueue,
         removeFromQueue,
+        playTrack,
+        playNext,
       }}
     >
       {children}

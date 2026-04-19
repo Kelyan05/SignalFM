@@ -1,21 +1,21 @@
-import { db } from "../config/firebaseAdmin.js";
+import { db }                  from "../config/firebaseAdmin.js";
 import { invalidateUserCache } from "../services/recommendationService.js";
 
 /**
  * POST /api/track/event
- * Records a track interaction (play, skip, like, unlike).
- * userId is taken from the verified JWT (req.user.uid) — never from the body.
+ * Records a track interaction.
+ * userId is always taken from the verified JWT — never from req.body.
  */
 export const recordTrackEvent = async (req, res) => {
   try {
     const { trackId, action, duration = 0 } = req.body;
-    const userId = req.user.uid; // always use the verified token, not req.body
+    const userId = req.user.uid;
 
     if (!trackId || !action) {
       return res.status(400).json({ error: "trackId and action are required" });
     }
 
-    const validActions = ["play", "skip", "like", "unlike"];
+    const validActions = ["play", "skip", "like", "unlike", "queue"];
     if (!validActions.includes(action)) {
       return res.status(400).json({ error: `action must be one of: ${validActions.join(", ")}` });
     }
@@ -23,9 +23,9 @@ export const recordTrackEvent = async (req, res) => {
     const trackRef = db.collection("engagement").doc(trackId);
 
     await db.runTransaction(async (t) => {
-      const doc = await t.get(trackRef);
-      const data = doc.exists
-        ? doc.data()
+      const docSnap = await t.get(trackRef);
+      const data    = docSnap.exists
+        ? docSnap.data()
         : { plays: 0, skips: 0, likes: 0, duration: 0 };
 
       switch (action) {
@@ -42,19 +42,20 @@ export const recordTrackEvent = async (req, res) => {
         case "unlike":
           data.likes = Math.max((data.likes || 1) - 1, 0);
           break;
+        case "queue":
+          // Logged for analytics; does not affect the engagement score directly
+          break;
       }
 
       t.set(trackRef, data, { merge: true });
     });
 
-    // Bust the recommendation cache so the next fetch re-scores with
-    // this interaction included. The invalidation is fire-and-forget —
-    // we don't need to await it before responding.
+    // Bust the recommendation cache — fire-and-forget, no need to await
     invalidateUserCache(userId);
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error("Track event error:", err);
+    console.error("[trackController] recordTrackEvent:", err);
     return res.status(500).json({ error: "Failed to record track event" });
   }
 };
@@ -81,7 +82,7 @@ export const getTrackStats = async (req, res) => {
 
     return res.status(200).json({ data });
   } catch (err) {
-    console.error("Get track stats error:", err);
+    console.error("[trackController] getTrackStats:", err);
     return res.status(500).json({ error: "Failed to fetch track stats" });
   }
 };

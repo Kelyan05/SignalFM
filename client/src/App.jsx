@@ -16,6 +16,7 @@ import { auth } from "./config/firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { PlayerProvider } from "./context/PlayerProvider.jsx";
+import { LikedTracksProvider } from "./context/LikedTracksProvider.jsx";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -40,48 +41,50 @@ function App() {
   const showPlayer = !!user && !!localStorage.getItem("spotify_refresh_token");
 
   return (
-    <PlayerProvider>
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+    <LikedTracksProvider>
+      <PlayerProvider>
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <Route path="/spotify-auth" element={<SpotifyAuth />} />
+            <Route path="/spotify-auth" element={<SpotifyAuth />} />
 
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute user={user}>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute user={user}>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/playlist"
-            element={
-              <ProtectedRoute user={user}>
-                <Playlist />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/playlist"
+              element={
+                <ProtectedRoute user={user}>
+                  <Playlist />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/discover"
-            element={
-              <ProtectedRoute user={user}>
-                <Discover />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/discover"
+              element={
+                <ProtectedRoute user={user}>
+                  <Discover />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="/shared/:playlistId" element={<SharedPlaylist />} />
-        </Routes>
+            <Route path="/shared/:playlistId" element={<SharedPlaylist />} />
+          </Routes>
 
-        {showPlayer && <SpotifyPlayer />}
-      </main>
-    </PlayerProvider>
+          {showPlayer && <SpotifyPlayer />}
+        </main>
+      </PlayerProvider>
+    </LikedTracksProvider>
   );
 }
 

@@ -1,37 +1,40 @@
 import { useCallback } from "react";
 import { auth } from "../config/firebase";
 
+const API = import.meta.env.VITE_API_URL;
+
+/**
+ * useTrackEvents
+ * Sends play / skip / like / unlike / queue events to the backend.
+ * Every function is fire-and-forget — errors are logged but never
+ * propagate to the UI so playback is never interrupted.
+ */
 export function useTrackEvents() {
-  const sendEvent = useCallback(async (trackId, action, meta = {}) => {
+  const sendEvent = useCallback(async (trackId, action) => {
     const user = auth.currentUser;
     if (!user || !trackId || !action) return;
 
     try {
       const token = await user.getIdToken();
 
-      await fetch(`${import.meta.env.VITE_API_URL}/api/track/event`, {
+      await fetch(`${API}/api/track/event`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          trackId,
-          action, // play | skip | like | unlike | queue
-          timestamp: Date.now(),
-          ...meta,
-        }),
+        body: JSON.stringify({ trackId, action }),
       });
     } catch (err) {
-      console.error("Track event failed:", err);
+      console.error(`[useTrackEvents] ${action} failed:`, err.message);
     }
   }, []);
 
   return {
-    play: (trackId, meta) => sendEvent(trackId, "play", meta),
-    skip: (trackId, meta) => sendEvent(trackId, "skip", meta),
-    like: (trackId, meta) => sendEvent(trackId, "like", meta),
-    unlike: (trackId, meta) => sendEvent(trackId, "unlike", meta),
-    queue: (trackId, meta) => sendEvent(trackId, "queue", meta),
+    play:   (trackId) => sendEvent(trackId, "play"),
+    skip:   (trackId) => sendEvent(trackId, "skip"),
+    like:   (trackId) => sendEvent(trackId, "like"),
+    unlike: (trackId) => sendEvent(trackId, "unlike"),
+    queue:  (trackId) => sendEvent(trackId, "queue"),
   };
 }

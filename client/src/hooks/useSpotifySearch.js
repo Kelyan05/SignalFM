@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { auth } from "../config/firebase";
+import { normalizeTrack } from "../utils/normalizeTrack";
 
 export function useSpotifySearch() {
   const [search, setSearch] = useState("");
@@ -12,7 +13,7 @@ export function useSpotifySearch() {
   const controllerRef = useRef(null);
   const lastFetch = useRef(0);
 
-  // 🔍 SEARCH FUNCTION
+
   const searchSpotify = useCallback(async () => {
     if (!search.trim() || loading || !hasMore) return;
 
@@ -43,9 +44,9 @@ export function useSpotifySearch() {
       if (!res.ok) throw new Error("Search failed");
 
       const data = await res.json();
-      const newTracks = data.tracks || [];
+      const newTracks = (data.tracks || []).map(normalizeTrack);
 
-      // ✅ FIX: dedupe tracks
+      // dedupe tracks
       setResults((prev) => {
         const existing = new Set(prev.map((t) => t.spotifyId));
 
@@ -55,7 +56,7 @@ export function useSpotifySearch() {
         ];
       });
 
-      // ✅ FIX: stop infinite scroll when no more results
+      // stop infinite scroll when no more results
       if (newTracks.length === 0) {
         setHasMore(false);
       }
@@ -70,14 +71,14 @@ export function useSpotifySearch() {
     }
   }, [search, offset, loading, hasMore]);
 
-  // 🔁 RESET when search changes
+  // RESET when search changes
   useEffect(() => {
     setResults([]);
     setOffset(0);
     setHasMore(true);
   }, [search]);
 
-  // ⏱️ DEBOUNCE
+  // DEBOUNCE
   useEffect(() => {
     if (search.length > 2) {
       const t = setTimeout(searchSpotify, 400);
@@ -85,7 +86,7 @@ export function useSpotifySearch() {
     }
   }, [search, searchSpotify]);
 
-  // 📜 INFINITE SCROLL (FIXED)
+  // infnite scroll
   useEffect(() => {
     const onScroll = () => {
       if (
