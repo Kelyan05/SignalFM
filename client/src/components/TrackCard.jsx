@@ -2,41 +2,56 @@ import { useTrackEvents } from "../hooks/useTrackEvents";
 import { useLikedTracks } from "../context/LikedTracksProvider";
 import { FaHeart, FaRegHeart, FaTrashAlt } from "react-icons/fa";
 
+/**
+ * TrackCard
+ *
+ * Compact card used inside PlaylistCard to display a track.
+ * Reads like state from LikedTracksProvider so the heart reflects
+ * the global truth, not local component state.
+ *
+ * Props
+ *   track              – normalised track object
+ *   onRemove(spotifyId) – optional; shows a trash button when provided
+ */
 function TrackCard({ track, onRemove }) {
   const { like, unlike } = useTrackEvents();
+  const { isLiked }      = useLikedTracks();
 
-  // from provider (global state)
-  const { isLiked, fetchLikedTracks } = useLikedTracks();
-
+  // isLiked reads from the global provider, so this is always in sync
+  // with TrackSearchResult and SpotifyPlayer on every other page.
   const liked = isLiked(track.spotifyId);
 
-  const handleLike = async () => {
+  // Pass the full track object so like() can write metadata to Firestore.
+  const handleLike = () => {
     if (liked) {
-      await unlike(track.spotifyId);
+      unlike(track);
     } else {
-      await like(track.spotifyId);
+      like(track);
     }
-
-    // refresh global state so ALL pages update
-    await fetchLikedTracks();
   };
 
   return (
     <div className="track-card">
-      <img src={track.albumUrl || track.image} alt={track.title} />
+      <img
+        src={track.albumUrl || track.image || "https://via.placeholder.com/200"}
+        alt={track.title}
+        className="track-image"
+      />
 
-      <div>{track.title}</div>
-      <div>{track.artist}</div>
+      <div className="track-title">{track.title}</div>
+      <div className="track-artist">{track.artist}</div>
 
-      <button onClick={handleLike}>
-        {liked ? <FaHeart color="red" /> : <FaRegHeart />}
-      </button>
-
-      {onRemove && (
-        <button onClick={() => onRemove(track.spotifyId)}>
-          <FaTrashAlt />
+      <div className="track-actions">
+        <button onClick={handleLike} title={liked ? "Unlike" : "Like"}>
+          {liked ? <FaHeart color="red" /> : <FaRegHeart />}
         </button>
-      )}
+
+        {onRemove && (
+          <button onClick={() => onRemove(track.spotifyId)} title="Remove from playlist">
+            <FaTrashAlt />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
