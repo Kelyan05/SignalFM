@@ -1,11 +1,18 @@
 import TrackSearchResult from "../components/TrackSearchResult.jsx";
+import NavBar from "../components/NavBar.jsx";
 import "../css/Dashboard.css";
 import { useSpotifySearch } from "../hooks/useSpotifySearch";
 import { usePlaylists } from "../hooks/usePlaylists";
 
+/**
+ * Dashboard (Discover page)
+ *
+ * Provides a Spotify catalogue search with infinite scroll.
+ * TrackSearchResult handles play, queue, like, and add-to-playlist —
+ * we just need to pass the playlists array and the addToPlaylist callback.
+ */
 function Dashboard() {
   const { search, setSearch, results, loading, error } = useSpotifySearch();
-
   const { playlists, addToPlaylist } = usePlaylists();
 
   return (
@@ -21,6 +28,8 @@ function Dashboard() {
       </div>
 
       {error && <p className="dashboard-error">{error}</p>}
+
+      {/* Search results */}
       <div className="track-grid">
         {results.map((track) => (
           <TrackSearchResult
@@ -32,6 +41,7 @@ function Dashboard() {
         ))}
       </div>
 
+      {/* Loading skeletons while fetching */}
       {loading && (
         <div className="track-grid">
           {Array.from({ length: 5 }).map((_, i) => (
