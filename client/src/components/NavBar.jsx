@@ -8,21 +8,13 @@ import { TbPlaylist } from "react-icons/tb";
 
 import "../css/Navbar.css";
 
-/**
- * NavBar
- *
- * Sticky top navigation. Shows the logged-in user's email prefix
- * as a coloured avatar pill with a dropdown containing the logout button.
- */
 function NavBar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const user = auth.currentUser;
 
-  // Derive a short display name from the email (everything before the @)
   const displayName = user?.email ? user.email.split("@")[0] : null;
-  // First letter for the avatar circle
   const initial = displayName ? displayName[0].toUpperCase() : "?";
 
   const handleLogout = async () => {
