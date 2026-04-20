@@ -1,7 +1,5 @@
-// controllers/searchController.js
 import { searchTracks } from "../services/spotifyService.js";
 
-// Handles /search endpoint
 export const searchSpotifyTracks = async (req, res) => {
   try {
     const { q, offset = 0 } = req.query;
