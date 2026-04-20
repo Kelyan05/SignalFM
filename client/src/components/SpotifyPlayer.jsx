@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef } from "react";
+import { useState, useContext, useEffect, useRef, useCallback } from "react";
 import { PlayerContext } from "../context/PlayerContext.jsx";
 import { useSpotifyPlayer } from "../hooks/useSpotifyPlayer";
 import { useTrackEvents } from "../hooks/useTrackEvents";
@@ -39,10 +39,12 @@ export default function SpotifyPlayer() {
   const [loop, setLoop] = useState(false);
   const [shuffle, setShuffle] = useState(false);
 
-  // Refs so setInterval closure always sees latest values without re-creating
   const loopRef = useRef(loop);
   const shuffleRef = useRef(shuffle);
   const queueRef = useRef(queue);
+  const progressBarRef = useRef(null);
+  const isDraggingRef = useRef(false);
+
   useEffect(() => {
     loopRef.current = loop;
   }, [loop]);
@@ -63,28 +65,10 @@ export default function SpotifyPlayer() {
     playPause,
     previous,
     setVolume,
+    seekTo,
     player,
   } = useSpotifyPlayer(setDeviceId);
 
-  // Start playback when currentTrack or deviceId changes
-  useEffect(() => {
-    if (!currentTrack || !deviceId) return;
-    const token = localStorage.getItem("spotify_access_token");
-    if (!token) return;
-
-    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        uris: [`spotify:track:${currentTrack.spotifyId}`],
-      }),
-    }).catch((err) => console.error("[SpotifyPlayer] play failed:", err));
-  }, [currentTrack, deviceId]);
-
-  // Poll SDK every second: update progress + auto-advance on track end
   useEffect(() => {
     if (!player) return;
     const id = setInterval(async () => {
@@ -92,7 +76,6 @@ export default function SpotifyPlayer() {
       if (!state) return;
       setProgress(state.position);
       setDuration(state.duration);
-
       if (state.paused && state.position === 0 && state.duration > 0) {
         if (loopRef.current) {
           player.seek(0).then(() => player.resume());
@@ -110,13 +93,61 @@ export default function SpotifyPlayer() {
     return () => clearInterval(id);
   }, [player, playNext, setQueue]);
 
+  useEffect(() => {
+    if (!currentTrack || !deviceId) return;
+    const token = localStorage.getItem("spotify_access_token");
+    if (!token) return;
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uris: [`spotify:track:${currentTrack.spotifyId}`],
+      }),
+    }).catch((err) =>
+      console.error("[SpotifyPlayer] play API call failed:", err)
+    );
+  }, [currentTrack, deviceId]);
+
+  const handleSeek = useCallback(
+    (e) => {
+      if (!duration || !seekTo || !progressBarRef.current) return;
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+      const seekMs = Math.floor(ratio * duration);
+      seekTo(seekMs);
+      setProgress(seekMs);
+    },
+    [duration, seekTo]
+  );
+
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (isDraggingRef.current) handleSeek(e);
+    },
+    [handleSeek]
+  );
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", () => {
+      isDraggingRef.current = false;
+    });
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [handleMouseMove]);
+
   if (!currentTrack) return null;
 
   const liked = isLiked(currentTrack.spotifyId);
+  const pct = duration > 0 ? Math.min((progress / duration) * 100, 100) : 0;
 
   const handleLike = () => {
-    if (liked) unlike(currentTrack);
-    else like(currentTrack);
+    liked ? unlike(currentTrack) : like(currentTrack);
   };
 
   const handleSkip = () => {
@@ -147,13 +178,10 @@ export default function SpotifyPlayer() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const pct = duration > 0 ? Math.min((progress / duration) * 100, 100) : 0;
-
+  // 4. Render
   return (
     <>
-      {/* ── Player bar ── */}
       <div className="spotify-player">
-        {/* Track info */}
         <div className="player-track-info">
           <img
             src={
@@ -170,7 +198,6 @@ export default function SpotifyPlayer() {
           </div>
         </div>
 
-        {/* Controls */}
         <div className="player-controls">
           <button
             onClick={handleShuffle}
@@ -186,7 +213,6 @@ export default function SpotifyPlayer() {
             onClick={playPause}
             disabled={!playerReady}
             className="btn-play-pause"
-            title={isPlaying ? "Pause" : "Play"}
           >
             {isPlaying ? <FaPause /> : <FaPlay />}
           </button>
@@ -203,14 +229,12 @@ export default function SpotifyPlayer() {
           <button
             onClick={handleLike}
             disabled={!playerReady}
-            title={liked ? "Unlike" : "Like"}
             className={liked ? "btn-liked" : ""}
           >
             {liked ? <FaHeart /> : <FaRegHeart />}
           </button>
         </div>
 
-        {/* Right: volume + queue */}
         <div className="player-right">
           <div className="player-volume">
             <FaVolumeDown />
@@ -221,15 +245,12 @@ export default function SpotifyPlayer() {
               step="0.01"
               value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              aria-label="Volume"
             />
             <FaVolumeUp />
           </div>
           <button
             onClick={() => setShowQueue((p) => !p)}
-            title="Queue"
             className={showQueue ? "btn-active" : ""}
-            style={{ position: "relative" }}
           >
             <MdQueueMusic style={{ fontSize: 18 }} />
             {queue.length > 0 && (
@@ -239,46 +260,35 @@ export default function SpotifyPlayer() {
         </div>
       </div>
 
-      {/* ── Progress strip ── */}
       <div className="player-progress">
-        <span>{fmt(progress)}</span>
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        <span className="progress-time">{fmt(progress)}</span>
+        <div
+          className="progress-bar progress-bar--seekable"
+          ref={progressBarRef}
+          onMouseDown={(e) => {
+            isDraggingRef.current = true;
+            handleSeek(e);
+          }}
+        >
+          <div className="progress-fill" style={{ width: `${pct}%` }}>
+            <span className="progress-thumb" />
+          </div>
         </div>
-        <span>{fmt(duration)}</span>
+        <span className="progress-time">{fmt(duration)}</span>
       </div>
 
-      {/* ── Queue panel ── */}
       {showQueue && (
         <div className="queue-panel">
           <div className="queue-panel-header">
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span>
               <FaList /> Up next ({queue.length})
-              {shuffle && (
-                <span style={{ color: "#1db954", fontSize: 11 }}>
-                  ● shuffle
-                </span>
-              )}
-              {loop && (
-                <span style={{ color: "#1db954", fontSize: 11 }}>● loop</span>
-              )}
             </span>
-            <button onClick={() => setShowQueue(false)} aria-label="Close">
+            <button onClick={() => setShowQueue(false)}>
               <FaTimes />
             </button>
           </div>
-
           {queue.length === 0 ? (
-            <p
-              style={{
-                padding: "28px 16px",
-                textAlign: "center",
-                color: "#555",
-                fontSize: 13,
-              }}
-            >
-              Queue is empty
-            </p>
+            <p style={{ textAlign: "center" }}>Queue is empty</p>
           ) : (
             <ul className="queue-list">
               {queue.map((t, i) => (
@@ -293,11 +303,7 @@ export default function SpotifyPlayer() {
                     <span className="queue-item-title">{t.title}</span>
                     <span className="queue-item-artist">{t.artist}</span>
                   </div>
-                  <button
-                    className="queue-item-remove"
-                    onClick={() => removeFromQueue(i)}
-                    aria-label="Remove"
-                  >
+                  <button onClick={() => removeFromQueue(i)}>
                     <FaTimes />
                   </button>
                 </li>
