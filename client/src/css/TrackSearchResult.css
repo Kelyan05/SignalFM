@@ -1,214 +1,134 @@
-/* ── Track card ──────────────────────────────────────────────────────────── */
+/* ── Track card ──────────────────────────────────────────────── */
 .track-card {
   position: relative;
   background: #111;
   border: 1px solid #222;
-  border-radius: 10px;
-  overflow: visible;
-  transition: transform 0.18s ease, border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  border-radius: 12px;
+  overflow: visible;           /* lets dropdown escape the card */
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
   display: flex;
   flex-direction: column;
 }
 
 .track-card:hover {
   transform: translateY(-3px);
-  border-color: #333;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-color: #2e2e2e;
+  box-shadow: 0 10px 28px rgba(0,0,0,.55);
 }
 
-.track-card--playing {
-  border-color: #1db954;
-  box-shadow: 0 0 0 1px #1db954, 0 8px 24px rgba(29, 185, 84, 0.15);
-}
-
-/* ── Album art + overlay ─────────────────────────────────────────────────── */
-.track-image-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  cursor: pointer;
-  overflow: hidden;
-  border-radius: 10px 10px 0 0;
-  flex-shrink: 0;
-}
-
+/* ── Album art ───────────────────────────────────────────────── */
 .track-image {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1;
   object-fit: cover;
+  border-radius: 12px 12px 0 0;
   display: block;
-  transition: transform 0.25s ease, filter 0.25s ease;
+  cursor: pointer;
+  transition: filter .22s ease;
 }
+.track-card:hover .track-image { filter: brightness(.65); }
 
-.track-image-wrap:hover .track-image {
-  transform: scale(1.04);
-  filter: brightness(0.55);
-}
-
-.track-play-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.track-image-wrap:hover .track-play-overlay {
-  opacity: 1;
-}
-
-.track-play-icon {
-  font-size: 2rem;
-  color: #fff;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
-}
-
-/* ── Info ────────────────────────────────────────────────────────────────── */
-.track-info {
-  padding: 10px 12px 4px;
-  flex: 1;
-  min-width: 0;
-}
+/* ── Info ────────────────────────────────────────────────────── */
+.track-info { padding: 10px 12px 4px; min-width: 0; }
 
 .track-title {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px; font-weight: 600; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-bottom: 3px;
 }
-
 .track-artist {
-  font-size: 0.75rem;
-  color: #888;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12px; color: #888;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ── Action row ──────────────────────────────────────────────────────────── */
+/* ── Action row ──────────────────────────────────────────────── */
 .track-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 10px 10px;
+  gap: 2px;
+  padding: 6px 8px 10px;
   border-top: 1px solid #1e1e1e;
 }
 
-.track-action-btn {
+.track-actions button {
   background: none;
   border: none;
-  color: #888;
+  color: #777;
   cursor: pointer;
   padding: 6px 7px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
-  transition: color 0.15s ease, background 0.15s ease;
+  font-size: 14px;
+  transition: color .15s, background .15s;
   line-height: 1;
 }
 
-.track-action-btn:hover {
-  color: #fff;
-  background: #1e1e1e;
-}
+.track-actions button:hover { color: #fff; background: #1e1e1e; }
+.track-actions button.btn-play  { color: #1db954; }
+.track-actions button.btn-play:hover { color: #1ed760; background: rgba(29,185,84,.1); }
+.track-actions button.btn-liked { color: #e74c3c; }
+.track-actions button.btn-liked:hover { background: rgba(231,76,60,.1); }
 
-.track-action-btn--play {
-  color: #1db954;
-  font-size: 0.8rem;
-}
-
-.track-action-btn--play:hover {
-  color: #1ed760;
-  background: rgba(29, 185, 84, 0.1);
-}
-
-.track-action-btn--liked {
-  color: #e74c3c;
-}
-
-.track-action-btn--liked:hover {
-  color: #ff6b6b;
-  background: rgba(231, 76, 60, 0.1);
-}
-
-/* ── Playlist dropdown ───────────────────────────────────────────────────── */
-.track-playlist-wrap {
+/* ── Playlist dropdown ───────────────────────────────────────── */
+.playlist-dropdown-wrapper {
   position: relative;
-  margin-left: auto;
+  margin-left: auto;  /* push to far right */
 }
 
 .playlist-dropdown {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   right: 0;
-  min-width: 180px;
-  background: #1a1a1a;
-  border: 1px solid #2e2e2e;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  z-index: 200;
+  min-width: 190px;
+  background: #1c1c1c;          /* clearly distinct from black background */
+  border: 1px solid #333;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.75);
+  z-index: 9999;                /* always on top */
   overflow: hidden;
-  animation: dropdownIn 0.15s ease;
+  animation: dropIn .14s ease;
 }
 
-@keyframes dropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .playlist-dropdown-label {
-  font-size: 0.7rem;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
   color: #555;
-  padding: 10px 12px 6px;
+  padding: 10px 12px 5px;
   margin: 0;
 }
 
-.playlist-dropdown-item {
+.playlist-option {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
   background: none;
   border: none;
-  color: #ccc;
-  font-size: 0.82rem;
-  padding: 9px 12px;
+  color: #ddd;                  /* light text — clearly readable */
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background .12s, color .12s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.playlist-dropdown-item:hover {
-  background: #252525;
-  color: #fff;
-}
+.playlist-option:hover { background: #2a2a2a; color: #fff; }
 
-.dropdown-check {
-  color: #1db954;
-  flex-shrink: 0;
+.playlist-option.disabled {
+  color: #444;
+  cursor: default;
+  font-style: italic;
 }
-
-.dropdown-list-icon {
-  color: #555;
-  flex-shrink: 0;
-}
+.playlist-option.disabled:hover { background: none; color: #444; }

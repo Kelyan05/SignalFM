@@ -75,7 +75,7 @@ export const getRecommendationsForUser = async (userId, genre) => {
   const offset = Math.floor(Math.random() * 10) * 20;
   const tracks = await searchTracks(genre, offset);
 
-  // Fetch per-track engagement + all engagement docs for CF in parallel
+  // Fetch per-track engagement + all engagement docs for Collaborative Filtering in parallel
   const [engagementMap, allEngagementsSnap] = await Promise.all([
     getEngagementData(tracks.map((t) => t.spotifyId)),
     db.collection("engagement").get(),

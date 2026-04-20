@@ -2,19 +2,6 @@ import { useState } from "react";
 import TrackCard from "./TrackCard";
 import "../css/PlaylistCard.css";
 
-/**
- * PlaylistCard
- * Displays a single playlist with rename, share, delete controls,
- * and a grid of TrackCards for its tracks.
- *
- * Props:
- *   playlist        – playlist object { id, name, tracks[] }
- *   onRename(id, name)
- *   onRemoveTrack(playlistId, spotifyId)
- *   onShare(id)
- *   onDelete(id)
- *   onClick()       – called when the card header is clicked (to select it)
- */
 function PlaylistCard({
   playlist,
   onRename,
@@ -32,7 +19,6 @@ function PlaylistCard({
     setEditing(false);
   };
 
-  // Build a 2x2 collage cover or single image
   const renderCover = () => {
     const tracks = playlist.tracks ?? [];
     if (tracks.length === 0) {
@@ -84,7 +70,6 @@ function PlaylistCard({
         </div>
       </div>
 
-      {/* Track grid — onRemove passed so TrackCard shows the remove button */}
       <div className="track-grid">
         {(playlist.tracks ?? []).map((track) => (
           <TrackCard

@@ -15,8 +15,6 @@ import {
 } from "react-icons/fa";
 import "../css/Home.css";
 
-// onSpotifyConnected is passed from App.jsx so the player shows immediately
-// after the user clicks "Connect Spotify" and completes OAuth.
 function Home({ onSpotifyConnected }) {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -86,7 +84,6 @@ function Home({ onSpotifyConnected }) {
       <NavBar />
 
       <main className="home-container">
-        {/* HERO */}
         <section className="hero-section">
           {loadingAuth ? (
             <div className="hero-skeleton">
@@ -171,7 +168,6 @@ function Home({ onSpotifyConnected }) {
           )}
         </section>
 
-        {/* RECOMMENDATIONS */}
         <section className="recommendation-section">
           <Recommendations getFreshAccessToken={getFreshAccessToken} />
         </section>
