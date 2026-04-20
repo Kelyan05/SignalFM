@@ -1,167 +1,109 @@
+***
+
 # 🎧 SignalFM — Music Discovery & Recommendation Platform
 
-## 🚀 Overview
+SignalFM is a full-stack, personalised music streaming web application designed to bridge the gap between passive music consumption and intelligent, user-responsive recommendation. It transforms standard streaming into an active, data-driven experience by capturing fine-grained user interactions to refine recommendations in real-time.
 
-SignalFM is a full-stack music discovery platform designed to deliver personalised recommendations through a hybrid recommendation system.
+## 🎯 Key Technical Highlights
 
-The application integrates external music data with user behaviour to create a dynamic and responsive user experience, focusing on performance, scalability, and clean system architecture.
-
----
-## 🎯 Key Highlights
-
-- Built full-stack application with scalable architecture  
-- Designed hybrid recommendation system (content + collaborative filtering)  
-- Implemented cache-first strategy improving performance and reducing API calls  
-- Integrated external APIs (Spotify) with real-time data processing  
-
-
-## 🚧 Project Status
-
-SignalFM is currently under active development.
-
-Core functionality including music search, playlist management, and recommendation logic is implemented. Ongoing work focuses on improving recommendation accuracy, performance optimisation, and scalability.
-
-
-## ✨ Features
-
-* 🔍 Search and discover music using Spotify Web API
-* 🎵 Playlist creation and management
-* 🤖 Hybrid recommendation system:
-
-  * Content-based filtering (genre, popularity, recency)
-  * Collaborative filtering (user interaction patterns)
-* ⚡ Cache-first data retrieval to reduce redundant API calls
-* 🔐 Secure authentication and user session handling
-* 📊 Real-time data integration for tracks, artists, and genres
+* **Weighted Recommendation Engine:** Implemented a hybrid recommendation system based on implicit feedback literature (Hu, Koren and Volinsky, 2008). 
+    * **Engagement Schema:** Captures implicit and explicit signals: `play` (+1), `skip` (-2), `like` (+3).
+* **Event-Driven Analytics:** Architecture utilises Firestore transactions to ensure data integrity during real-time event logging.
+* **Real-Time Feedback Loop:** Employs a server-side cache invalidation mechanism that ensures recommendations update immediately after user interactions, providing a responsive personalisation loop.
+* **Domain-Driven Architecture:** Frontend built on a custom hook pattern (`useTrackEvents`, `useRecommendations`, etc.), enforcing strict separation between UI presentation and business logic.
 
 ---
 
-## 🧠 Recommendation System
+## ⚙️ Core Architecture
 
-SignalFM uses a hybrid approach to improve recommendation quality:
+The system is designed for maintainability and performance, using a clean separation of concerns:
 
-* **Content-Based Filtering**: Matches songs based on genre similarity, popularity, and recency
-* **Collaborative Filtering**: Learns from user behaviour such as likes and engagement patterns
-* **Behavioural Signals**: Enhances recommendations using interaction data
-
-This approach balances accuracy, diversity, and personalisation.
-
----
-
-## 🏗️ System Architecture
-
-The backend follows a modular architecture:
-
-* Controller → Service → Middleware pattern
-* Separation of concerns for maintainability and scalability
-* RESTful API design for client-server communication
-
-### Key Design Decisions
-
-* Implemented **in-memory caching** for fast data retrieval
-* Designed with **future Redis integration** in mind for distributed caching
-* Structured for **future machine learning enhancements**
+* **Frontend:** React 18, utilising domain-driven custom hooks to manage complex playback and event-tracking states without "prop drilling."
+* **Backend:** Node.js/Express, following a Controller-Service-Middleware pattern.
+* **Database:** Google Firestore (NoSQL), utilising transactional writes for engagement scoring to prevent race conditions.
+* **API Layer:** Spotify Web API (catalogue search & audio metadata) + Spotify Web Playback SDK (in-browser streaming).
 
 ---
 
-## ⚙️ Tech Stack
+## 🧠 The Recommendation Engine
 
-### Frontend
+SignalFM moves beyond "black box" algorithms by providing a transparent, literature-based scoring model:
 
-* React
-* HTML5, CSS3
-* Component-based architecture
-* Hooks & Context API
-
-### Backend
-
-* Node.js
-* Express.js
-* REST APIs
-* Authentication middleware
-
-### Tools & Platforms
-
-* Firebase (authentication & data storage)
-* Spotify Web API
-* Postman (API testing)
-* Git & version control
+1.  **Data Collection:** Captures track plays, manual skips, and explicit likes via a dedicated `processTrackEvent` service.
+2.  **Weighted Scoring:** Each interaction type is assigned a weight based on empirical studies (Mehrotra et al., 2017), allowing the system to differentiate between "tolerated" (play) and "strongly preferred" (like) content.
+3.  **Seed Selection:** The engine aggregates the top-scoring tracks from the user's engagement history to serve as "seed tracks" for the Spotify Recommendations endpoint, creating a personalised discovery experience from the first session.
 
 ---
 
 ## ⚡ Performance Optimisation
 
-* Cache-first query strategy reduces external API calls
-* Lazy loading improves frontend performance
-* Efficient state management reduces unnecessary re-renders
-* Modular backend improves scalability and maintainability
+* **Cache-First Strategy:** Implemented a server-side recommendation cache that drastically reduces Spotify API call frequency during active listening sessions.
+* **Atomic Transactions:** Firestore transactions guarantee that user engagement updates (plays/skips) remain accurate even under concurrent load.
+* **Optimised Hooks:** Efficient state management using `useCallback` and `useMemo` to minimise unnecessary re-renders in the playback UI.
 
 ---
 
-## 🔌 API Integration
+## 🛠️ Tech Stack
 
-SignalFM integrates with the Spotify Web API to:
-
-* Retrieve track and artist data
-* Fetch genre metadata
-* Enable music search functionality
+* **Frontend:** React, HTML5, CSS3, Vite
+* **Backend:** Node.js, Express.js
+* **Database & Auth:** Firebase Firestore, Firebase Authentication
+* **External Integration:** Spotify Web API & Web Playback SDK
+* **DevOps:** Deployed on Render
 
 ---
 
-## 📦 Installation
+🚀 Local Installation & Setup
+Clone the repository:
 
-```bash
-# Clone the repository
+Bash
 git clone https://github.com/Kelyan05/SignalFM.git
-
-# Navigate into the project
 cd SignalFM
+Install Dependencies:
 
-# Install dependencies
+Bash
+# Install Client dependencies
+cd client
 npm install
 
-# Run the development server
+# Install Server dependencies
+cd ../server
+npm install
+Run the Application:
+You will need two terminal windows open:
+
+Terminal 1 (Backend):
+
+Bash
+cd server
+node server.js
+Terminal 2 (Frontend):
+
+Bash
+cd client
 npm run dev
-```
 
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file and add:
-
+### Environment Variables
+Create a `.env` file in the root directory:
 ```env
 SPOTIFY_CLIENT_ID=your_client_id
 SPOTIFY_CLIENT_SECRET=your_client_secret
-FIREBASE_CONFIG=your_config
+FIREBASE_CONFIG=your_config_object
+SPOTIFY_REFRESH_TOKEN = your refresh_token
+SPOTIFY_REDIRECT_URI = your_spotify_redirecturi
 ```
 
 ---
 
-## 📈 Future Improvements
+## 🚧 Roadmap & Future Enhancements
 
-- Implement Redis-based distributed caching layer  
-- Enhance recommendation system with advanced ranking algorithms  
-- Introduce automated testing (Jest, integration tests)  
-- Deploy CI/CD pipeline for continuous delivery  
-- Improve scalability for high-traffic environments  
----
+Based on critical evaluation and identifying areas for growth, the following features are prioritised for future development:
 
-## 📸 Demo
-
-Project is still undergoing development locally
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to fork the repo and submit a pull request.
-
----
-
-## 📄 License
-
-This project is open-source and available under the MIT License.
+* **Distributed Caching:** Migrating from in-memory Map caching to **Redis** to support multi-instance scaling.
+* **Recency Decay:** Implementing time-based decay for engagement scores so the engine favors current preferences over old interactions.
+* **Automated Testing:** Implementation of a Jest/Vitest suite for backend API endpoints and React Testing Library for frontend hooks.
+* **Diversity Constraints:** Adding logic to mitigate "filter bubble" risks by ensuring recommendations include genre variety.
+* **Full Accessibility Audit:** Completing a full WCAG 2.1 compliance audit.
 
 ---
 
@@ -169,20 +111,9 @@ This project is open-source and available under the MIT License.
 
 **Kelyan Djomo**
 📧 [darrelkelyan@outlook.com](mailto:darrelkelyan@outlook.com)
-🔗 https://github.com/Kelyan05
+🔗 [https://github.com/Kelyan05](https://github.com/Kelyan05)
 
-## ⚠️ Current Limitations
+---
 
-- Recommendation system is not yet fully optimised for large-scale datasets  
-- Caching is currently in-memory and not distributed  
-- No automated testing implemented yet
-
-## 🏗️ Architecture Diagram
-
-🚧 Diagram coming soon (will illustrate system components and data flow)
-  
-Demo account login:
-demo@signalfm.test/ SignalFM123!
-
-reviewer@signalfm.test / reviwer123
-
+## 📄 License
+This project is open-source and available under the MIT License.
