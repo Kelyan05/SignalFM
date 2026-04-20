@@ -8,7 +8,7 @@ SignalFM is a full-stack, personalised music streaming web application designed 
 
 * **Weighted Recommendation Engine:** Implemented a hybrid recommendation system based on implicit feedback literature (Hu, Koren and Volinsky, 2008). 
     * **Engagement Schema:** Captures implicit and explicit signals: `play` (+1), `skip` (-2), `like` (+3).
-* **Event-Driven Analytics:** Architecture utilizes Firestore transactions to ensure data integrity during real-time event logging.
+* **Event-Driven Analytics:** Architecture utilises Firestore transactions to ensure data integrity during real-time event logging.
 * **Real-Time Feedback Loop:** Employs a server-side cache invalidation mechanism that ensures recommendations update immediately after user interactions, providing a responsive personalisation loop.
 * **Domain-Driven Architecture:** Frontend built on a custom hook pattern (`useTrackEvents`, `useRecommendations`, etc.), enforcing strict separation between UI presentation and business logic.
 
@@ -18,9 +18,9 @@ SignalFM is a full-stack, personalised music streaming web application designed 
 
 The system is designed for maintainability and performance, using a clean separation of concerns:
 
-* **Frontend:** React 18, utilizing domain-driven custom hooks to manage complex playback and event-tracking states without "prop drilling."
+* **Frontend:** React 18, utilising domain-driven custom hooks to manage complex playback and event-tracking states without "prop drilling."
 * **Backend:** Node.js/Express, following a Controller-Service-Middleware pattern.
-* **Database:** Google Firestore (NoSQL), utilizing transactional writes for engagement scoring to prevent race conditions.
+* **Database:** Google Firestore (NoSQL), utilising transactional writes for engagement scoring to prevent race conditions.
 * **API Layer:** Spotify Web API (catalogue search & audio metadata) + Spotify Web Playback SDK (in-browser streaming).
 
 ---
@@ -31,15 +31,15 @@ SignalFM moves beyond "black box" algorithms by providing a transparent, literat
 
 1.  **Data Collection:** Captures track plays, manual skips, and explicit likes via a dedicated `processTrackEvent` service.
 2.  **Weighted Scoring:** Each interaction type is assigned a weight based on empirical studies (Mehrotra et al., 2017), allowing the system to differentiate between "tolerated" (play) and "strongly preferred" (like) content.
-3.  **Seed Selection:** The engine aggregates the top-scoring tracks from the user's engagement history to serve as "seed tracks" for the Spotify Recommendations endpoint, creating a personalized discovery experience from the first session.
+3.  **Seed Selection:** The engine aggregates the top-scoring tracks from the user's engagement history to serve as "seed tracks" for the Spotify Recommendations endpoint, creating a personalised discovery experience from the first session.
 
 ---
 
-## ⚡ Performance Optimization
+## ⚡ Performance Optimisation
 
 * **Cache-First Strategy:** Implemented a server-side recommendation cache that drastically reduces Spotify API call frequency during active listening sessions.
 * **Atomic Transactions:** Firestore transactions guarantee that user engagement updates (plays/skips) remain accurate even under concurrent load.
-* **Optimized Hooks:** Efficient state management using `useCallback` and `useMemo` to minimize unnecessary re-renders in the playback UI.
+* **Optimised Hooks:** Efficient state management using `useCallback` and `useMemo` to minimise unnecessary re-renders in the playback UI.
 
 ---
 
@@ -97,7 +97,7 @@ SPOTIFY_REDIRECT_URI = your_spotify_redirecturi
 
 ## 🚧 Roadmap & Future Enhancements
 
-Based on critical evaluation and identifying areas for growth, the following features are prioritized for future development:
+Based on critical evaluation and identifying areas for growth, the following features are prioritised for future development:
 
 * **Distributed Caching:** Migrating from in-memory Map caching to **Redis** to support multi-instance scaling.
 * **Recency Decay:** Implementing time-based decay for engagement scores so the engine favors current preferences over old interactions.
