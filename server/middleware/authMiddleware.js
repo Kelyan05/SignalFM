@@ -10,7 +10,7 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
 
-    req.user = decodedToken; // contains uid, email etc
+    req.user = decodedToken; 
 
     next();
   } catch (err) {
