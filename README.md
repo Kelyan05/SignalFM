@@ -53,21 +53,35 @@ SignalFM moves beyond "black box" algorithms by providing a transparent, literat
 
 ---
 
-## 🚀 Installation & Setup
+🚀 Local Installation & Setup
+Clone the repository:
 
-```bash
-# Clone the repository
+Bash
 git clone https://github.com/Kelyan05/SignalFM.git
-
-# Navigate into the project
 cd SignalFM
+Install Dependencies:
 
-# Install dependencies
+Bash
+# Install Client dependencies
+cd client
 npm install
 
-# Run the development server
+# Install Server dependencies
+cd ../server
+npm install
+Run the Application:
+You will need two terminal windows open:
+
+Terminal 1 (Backend):
+
+Bash
+cd server
+node server.js
+Terminal 2 (Frontend):
+
+Bash
+cd client
 npm run dev
-```
 
 ### Environment Variables
 Create a `.env` file in the root directory:
@@ -75,6 +89,8 @@ Create a `.env` file in the root directory:
 SPOTIFY_CLIENT_ID=your_client_id
 SPOTIFY_CLIENT_SECRET=your_client_secret
 FIREBASE_CONFIG=your_config_object
+SPOTIFY_REFRESH_TOKEN = your refresh_token
+SPOTIFY_REDIRECT_URI = your_spotify_redirecturi
 ```
 
 ---
