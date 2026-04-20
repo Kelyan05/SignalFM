@@ -3,10 +3,7 @@ import {
   invalidateUserCache,
 } from "../services/recommendationService.js";
 
-/**
- * GET /api/recommendations?genre=pop
- * Returns up to 20 scored, artist-diverse recommendations for the user.
- */
+
 export const getRecommendations = async (req, res) => {
   try {
     const { genre } = req.query;
@@ -26,12 +23,7 @@ export const getRecommendations = async (req, res) => {
   }
 };
 
-/**
- * POST /api/recommendations/invalidate
- * Explicit cache bust — called by the frontend when it needs a forced refresh.
- * The primary invalidation path is trackController calling invalidateUserCache
- * directly after every interaction event.
- */
+
 export const invalidateRecommendations = async (req, res) => {
   try {
     invalidateUserCache(req.user.uid);
