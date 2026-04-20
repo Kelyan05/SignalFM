@@ -1,7 +1,4 @@
 /**
- * collaborativeService.js
- *
- * Lightweight item-based collaborative filtering.
  *
  * Logic:
  *   1. Find all users who liked the target track.

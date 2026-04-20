@@ -2,20 +2,9 @@ import { useTrackEvents } from "../hooks/useTrackEvents";
 import { useLikedTracks } from "../context/LikedTracksProvider";
 import { FaHeart, FaRegHeart, FaTrashAlt } from "react-icons/fa";
 
-/**
- * TrackCard
- *
- * Compact card used inside PlaylistCard to display a track.
- * Reads like state from LikedTracksProvider so the heart reflects
- * the global truth, not local component state.
- *
- * Props
- *   track              – normalised track object
- *   onRemove(spotifyId) – optional; shows a trash button when provided
- */
 function TrackCard({ track, onRemove }) {
   const { like, unlike } = useTrackEvents();
-  const { isLiked }      = useLikedTracks();
+  const { isLiked } = useLikedTracks();
 
   // isLiked reads from the global provider, so this is always in sync
   // with TrackSearchResult and SpotifyPlayer on every other page.
@@ -47,7 +36,10 @@ function TrackCard({ track, onRemove }) {
         </button>
 
         {onRemove && (
-          <button onClick={() => onRemove(track.spotifyId)} title="Remove from playlist">
+          <button
+            onClick={() => onRemove(track.spotifyId)}
+            title="Remove from playlist"
+          >
             <FaTrashAlt />
           </button>
         )}

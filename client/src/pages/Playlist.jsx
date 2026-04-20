@@ -8,6 +8,13 @@ import { useLikedTracks } from "../context/LikedTracksProvider";
 import { FaPlus } from "react-icons/fa";
 import "../css/Playlist.css";
 
+/**
+ * Playlist page
+ *
+ * Displays the user's playlists and a special "Liked Songs" card.
+ * Liked tracks come from LikedTracksProvider — no local Firestore fetch needed.
+ * Playlist CRUD is handled by usePlaylists.
+ */
 function Playlist() {
   const {
     playlists,
@@ -19,7 +26,7 @@ function Playlist() {
     deletePlaylist,
   } = usePlaylists();
 
-  // ✅ GLOBAL LIKED TRACKS (FROM CONTEXT)
+  // Global liked tracks — populated by LikedTracksProvider in App.jsx.
   const { likedTracks } = useLikedTracks();
 
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -27,26 +34,25 @@ function Playlist() {
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(null);
 
-  // ── Create playlist ──
+  // ── Create ────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!playlistName.trim()) return;
     setCreating(true);
-
     await createPlaylist(playlistName.trim());
-
     setPlaylistName("");
     setCreating(false);
   };
 
-  // ── Share playlist ──
+  // ── Share ─────────────────────────────────────────────────────────────────
   const sharePlaylist = async (playlistId) => {
-    const link = `${window.location.origin}/shared/${playlistId}`;
-    await navigator.clipboard.writeText(link);
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/shared/${playlistId}`
+    );
     setCopied(playlistId);
     setTimeout(() => setCopied(null), 2500);
   };
 
-  // ── Decide which tracks to show ──
+  // Tracks shown in the detail view below the grid.
   const viewTracks =
     selectedPlaylist === "liked" ? likedTracks : selectedPlaylist?.tracks ?? [];
 
@@ -54,7 +60,7 @@ function Playlist() {
     <div className="playlist-page">
       <NavBar />
 
-      {/* HEADER */}
+      {/* Header */}
       <div className="playlist-header-row">
         <h1>My Playlists</h1>
         <span className="playlist-count">
@@ -62,7 +68,7 @@ function Playlist() {
         </span>
       </div>
 
-      {/* CREATE PLAYLIST */}
+      {/* Create new playlist */}
       <div className="playlist-create">
         <input
           placeholder="New playlist name..."
@@ -84,9 +90,9 @@ function Playlist() {
         <p className="playlist-loading">Loading...</p>
       ) : (
         <>
-          {/* PLAYLIST LIST */}
+          {/* Playlist card grid */}
           <div className="playlist-cards">
-            {/* Liked Songs Card */}
+            {/* Liked Songs is a virtual playlist backed by LikedTracksProvider */}
             <div
               className={`playlist-card liked ${
                 selectedPlaylist === "liked" ? "active" : ""
@@ -96,7 +102,6 @@ function Playlist() {
               ❤️ Liked Songs ({likedTracks.length})
             </div>
 
-            {/* User Playlists */}
             {playlists.map((playlist) => (
               <PlaylistCard
                 key={playlist.id}
@@ -110,7 +115,7 @@ function Playlist() {
             ))}
           </div>
 
-          {/* TRACK VIEW */}
+          {/* Track detail view */}
           {selectedPlaylist && (
             <div className="playlist-tracks-view">
               <h2>

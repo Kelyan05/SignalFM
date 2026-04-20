@@ -27,14 +27,10 @@ const GENRES = [
 
 function Recommendations() {
   const [selectedGenre, setSelectedGenre] = useState("pop");
-
-  // useRecommendations already re-fetches when genre changes (via useEffect
-  // on fetchRecommendations). We only call refresh() explicitly for
-  // force-refresh scenarios (user button click, global update event).
   const { tracks, loading, error, refresh } = useRecommendations(selectedGenre);
   const { playlists, addToPlaylist } = usePlaylists();
 
-  // Listen for global cache-bust events (fired after like/skip/play events)
+  // Listen for cache-bust events fired after likes/skips/plays
   useEffect(() => {
     window.addEventListener("recommendationUpdate", refresh);
     return () => window.removeEventListener("recommendationUpdate", refresh);
@@ -44,7 +40,6 @@ function Recommendations() {
 
   return (
     <div className="recommendations-section">
-      {/* ── Header ── */}
       <div className="rec-header">
         <h2 className="rec-title">Recommended for you</h2>
         {!loading && tracks.length > 0 && (
@@ -54,7 +49,6 @@ function Recommendations() {
         )}
       </div>
 
-      {/* ── Genre filter pills ── */}
       <div className="genre-pills">
         {GENRES.map((g) => (
           <button
@@ -67,27 +61,30 @@ function Recommendations() {
         ))}
       </div>
 
-      {/* ── Loading skeletons ── */}
       {loading && (
         <div className="track-grid">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="skeleton-card" />
+            <div key={i} className="skeleton-card">
+              <div className="skeleton-art" />
+              <div className="skeleton-line long" />
+              <div className="skeleton-line short" />
+            </div>
           ))}
         </div>
       )}
 
-      {/* ── Error state ── */}
       {error && <p className="dashboard-error">{error}</p>}
 
-      {/* ── Empty state ── */}
       {!loading && !error && tracks.length === 0 && (
         <div className="rec-feedback">
           <FaMusic />
-          <p>No {selectedGenre} recommendations yet — start listening!</p>
+          <p>No {selectedGenre} recommendations yet</p>
+          <p style={{ fontSize: 13, color: "#555" }}>
+            Play, skip or like a track to personalise your feed
+          </p>
         </div>
       )}
 
-      {/* ── Track grid ── */}
       {!loading && tracks.length > 0 && (
         <div className="track-grid">
           {tracks.map((track) => (
@@ -101,7 +98,7 @@ function Recommendations() {
         </div>
       )}
 
-      {/* ── Manual refresh ── */}
+      {/* Manual refresh — always force-refresh so it works even cold */}
       {!loading && (
         <button className="rec-retry-btn" onClick={refresh}>
           <FaRedo /> Refresh

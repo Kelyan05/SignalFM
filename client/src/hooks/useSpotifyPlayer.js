@@ -47,7 +47,6 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
       playerRef.current = player;
     };
 
-    // LOAD SCRIPT ONLY ONCE
     if (!document.getElementById("spotify-sdk")) {
       const script = document.createElement("script");
       script.id = "spotify-sdk";
@@ -63,7 +62,6 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
     };
   }, [setDeviceIdExternal]);
 
-  // ─── CONTROLS ─────────────────────────────────
 
   const playPause = useCallback(() => {
     if (!playerRef.current) return;

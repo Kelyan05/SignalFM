@@ -1,22 +1,18 @@
 import { useContext, useRef, useEffect, useState } from "react";
-import { PlayerContext }   from "../context/PlayerContext";
-import { useTrackEvents }  from "../hooks/useTrackEvents";
-import { useLikedTracks }  from "../context/LikedTracksProvider";
-import { normalizeTrack }  from "../utils/normalizeTrack";
+import { PlayerContext } from "../context/PlayerContext";
+import { useTrackEvents } from "../hooks/useTrackEvents";
+import { useLikedTracks } from "../context/LikedTracksProvider";
+import { normalizeTrack } from "../utils/normalizeTrack";
 
-import { FaHeart, FaRegHeart, FaPlay, FaList, FaPlusCircle } from "react-icons/fa";
+import {
+  FaHeart,
+  FaRegHeart,
+  FaPlay,
+  FaList,
+  FaPlusCircle,
+} from "react-icons/fa";
 import "../css/TrackSearchResult.css";
 
-/**
- * TrackSearchResult
- *
- * Reusable track card used on Dashboard, Recommendations, and Playlist pages.
- *
- * Props
- *   track           – raw or already-normalised track object
- *   playlists       – the user's playlists (for the add-to-playlist dropdown)
- *   onAddToPlaylist(playlistId, track) – writes the track to Firestore
- */
 function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
   const { setCurrentTrack, addToQueue } = useContext(PlayerContext);
   const { like, unlike, queue: queueEvent } = useTrackEvents();
@@ -30,8 +26,6 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
   // Always normalise so every handler has guaranteed consistent field names.
   const safeTrack = normalizeTrack(track);
   const liked = isLiked(safeTrack.spotifyId);
-
-  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handlePlay = () => setCurrentTrack(safeTrack);
 
@@ -61,8 +55,6 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="track-card">
       <img
@@ -78,9 +70,13 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
       </div>
 
       <div className="track-actions">
-        <button onClick={handlePlay} title="Play"><FaPlay /></button>
+        <button onClick={handlePlay} title="Play">
+          <FaPlay />
+        </button>
 
-        <button onClick={handleQueue} title="Add to queue"><FaList /></button>
+        <button onClick={handleQueue} title="Add to queue">
+          <FaList />
+        </button>
 
         <button onClick={handleLike} title={liked ? "Unlike" : "Like"}>
           {liked ? <FaHeart color="red" /> : <FaRegHeart />}
@@ -89,7 +85,10 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
         {/* Add-to-playlist dropdown */}
         <div className="playlist-dropdown-wrapper" ref={dropdownRef}>
           <button
-            onClick={(e) => { e.stopPropagation(); setShowDropdown((p) => !p); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDropdown((p) => !p);
+            }}
             title="Add to playlist"
           >
             <FaPlusCircle />

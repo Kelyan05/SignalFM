@@ -3,14 +3,7 @@ import { auth } from "../config/firebase";
 
 const API = import.meta.env.VITE_API_URL;
 
-/**
- * useRecommendations
- * Fetches genre-filtered recommendations from the backend.
- * Re-fetches automatically when `genre` changes.
- * `refresh(true)` busts the server-side cache via the ?refresh flag.
- *
- * Backend returns: { recommendations: Track[] }
- */
+
 export function useRecommendations(genre) {
   const [tracks, setTracks]   = useState([]);
   const [loading, setLoading] = useState(false);

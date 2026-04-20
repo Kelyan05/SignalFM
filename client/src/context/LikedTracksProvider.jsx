@@ -33,9 +33,6 @@ export function LikedTracksProvider({ children }) {
     }
   }, []);
 
-  // Wait for Firebase to resolve auth before fetching.
-  // onAuthStateChanged fires immediately with the current user (or null),
-  // so this correctly handles both fresh logins and page refreshes.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -48,10 +45,10 @@ export function LikedTracksProvider({ children }) {
   }, [fetchLikedTracks]);
 
   // Re-fetch whenever another part of the app fires this event
-  // (e.g. after a like/unlike in useTrackEvents).
   useEffect(() => {
     window.addEventListener("likedTracksUpdate", fetchLikedTracks);
-    return () => window.removeEventListener("likedTracksUpdate", fetchLikedTracks);
+    return () =>
+      window.removeEventListener("likedTracksUpdate", fetchLikedTracks);
   }, [fetchLikedTracks]);
 
   const isLiked = useCallback(
@@ -60,7 +57,9 @@ export function LikedTracksProvider({ children }) {
   );
 
   return (
-    <LikedTracksContext.Provider value={{ likedTracks, fetchLikedTracks, isLiked }}>
+    <LikedTracksContext.Provider
+      value={{ likedTracks, fetchLikedTracks, isLiked }}
+    >
       {children}
     </LikedTracksContext.Provider>
   );
@@ -70,6 +69,7 @@ export function LikedTracksProvider({ children }) {
 // instead of a cryptic "cannot read property of undefined" crash.
 export function useLikedTracks() {
   const ctx = useContext(LikedTracksContext);
-  if (!ctx) throw new Error("useLikedTracks must be used inside LikedTracksProvider");
+  if (!ctx)
+    throw new Error("useLikedTracks must be used inside LikedTracksProvider");
   return ctx;
 }
