@@ -1,42 +1,36 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 export function useSpotifyPlayer(setDeviceIdExternal) {
-  const playerRef = useRef(null);
+  const playerRef   = useRef(null);
   const sdkReadyRef = useRef(false);
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying,   setIsPlaying]   = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
-  const [volume, setVolumeState] = useState(0.5);
+  const [volume,      setVolumeState] = useState(0.5);
 
   useEffect(() => {
     if (sdkReadyRef.current) return;
-
     sdkReadyRef.current = true;
 
-    window.onSpotifyWebPlaybackSDKReady = () => {
+    const init = () => {
       const token = localStorage.getItem("spotify_access_token");
-
       if (!token) {
-        console.warn("No Spotify token found");
+        console.warn("[useSpotifyPlayer] No Spotify access token found");
         return;
       }
 
       const player = new window.Spotify.Player({
         name: "SignalFM Player",
-        getOAuthToken: (cb) => cb(token),
+        getOAuthToken: (cb) => cb(localStorage.getItem("spotify_access_token")),
         volume: 0.5,
       });
 
       player.addListener("ready", ({ device_id }) => {
-        console.log("Spotify ready:", device_id);
         setDeviceIdExternal?.(device_id);
         setPlayerReady(true);
       });
 
-      player.addListener("not_ready", () => {
-        console.warn("Spotify not ready");
-        setPlayerReady(false);
-      });
+      player.addListener("not_ready", () => setPlayerReady(false));
 
       player.addListener("player_state_changed", (state) => {
         if (!state) return;
@@ -47,47 +41,34 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
       playerRef.current = player;
     };
 
+    window.onSpotifyWebPlaybackSDKReady = init;
+
     if (!document.getElementById("spotify-sdk")) {
-      const script = document.createElement("script");
-      script.id = "spotify-sdk";
-      script.src = "https://sdk.scdn.co/spotify-player.js";
-      script.async = true;
+      const script  = document.createElement("script");
+      script.id     = "spotify-sdk";
+      script.src    = "https://sdk.scdn.co/spotify-player.js";
+      script.async  = true;
       document.body.appendChild(script);
     } else if (window.Spotify) {
-      window.onSpotifyWebPlaybackSDKReady();
+      init();
     }
 
-    return () => {
-      playerRef.current?.disconnect();
-    };
+    return () => { playerRef.current?.disconnect(); };
   }, [setDeviceIdExternal]);
 
-
-  const playPause = useCallback(() => {
-    if (!playerRef.current) return;
-    playerRef.current.togglePlay();
-  }, []);
-
-  const skip = useCallback(() => {
-    playerRef.current?.nextTrack();
-  }, []);
-
-  const previous = useCallback(() => {
-    playerRef.current?.previousTrack();
-  }, []);
+  const playPause = useCallback(() => { playerRef.current?.togglePlay(); }, []);
+  const skip      = useCallback(() => { playerRef.current?.nextTrack(); }, []);
+  const previous  = useCallback(() => { playerRef.current?.previousTrack(); }, []);
 
   const setVolume = useCallback((v) => {
     setVolumeState(v);
     playerRef.current?.setVolume(v);
   }, []);
 
-  return {
-    isPlaying,
-    playerReady,
-    volume,
-    playPause,
-    skip,
-    previous,
-    setVolume,
-  };
+  /** Seek the current track to `ms` milliseconds — used by the progress scrubber */
+  const seekTo = useCallback((ms) => {
+    playerRef.current?.seek(ms);
+  }, []);
+
+  return { isPlaying, playerReady, volume, playPause, skip, previous, setVolume, seekTo, player: playerRef.current };
 }

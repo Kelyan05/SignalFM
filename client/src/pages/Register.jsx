@@ -5,7 +5,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "../css/Login.css";
 
-// ethics form (Section 5).
 // Each one maps to a specific commitment made in the submission.
 const CONSENT_ITEMS = [
   "I understand this platform is an academic research prototype built at the University of Westminster.",
