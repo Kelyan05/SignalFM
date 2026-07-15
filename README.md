@@ -1,111 +1,72 @@
-***
-
 # 🎧 SignalFM — Music Discovery & Recommendation Platform
 
-SignalFM is a full-stack, personalised music streaming web application designed to bridge the gap between passive music consumption and intelligent, user-responsive recommendation. It transforms standard streaming into an active, data-driven experience by capturing fine-grained user interactions to refine recommendations in real-time.
+SignalFM is a full-stack music discovery web app. It streams music through the Spotify Web Playback SDK, records each user's listening behaviour (plays, skips, likes), and uses that history to personalise a transparent, formula-based recommendation feed per genre.
 
-## 🎯 Key Technical Highlights
+## What it actually does
 
-* **Weighted Recommendation Engine:** Implemented a hybrid recommendation system based on implicit feedback literature (Hu, Koren and Volinsky, 2008). 
-    * **Engagement Schema:** Captures implicit and explicit signals: `play` (+1), `skip` (-2), `like` (+3).
-* **Event-Driven Analytics:** Architecture utilises Firestore transactions to ensure data integrity during real-time event logging.
-* **Real-Time Feedback Loop:** Employs a server-side cache invalidation mechanism that ensures recommendations update immediately after user interactions, providing a responsive personalisation loop.
-* **Domain-Driven Architecture:** Frontend built on a custom hook pattern (`useTrackEvents`, `useRecommendations`, etc.), enforcing strict separation between UI presentation and business logic.
+* **Per-user recommendation engine.** Candidate tracks from Spotify search are ranked by an explicit weighted sum of three signals: Spotify popularity, release recency, and the requesting user's own engagement history (log-compressed likes and plays minus skips). The exact formula, weights, and the reasoning behind them live in [`server/services/scoring.js`](server/services/scoring.js) and are documented in [ARCHITECTURE.md](ARCHITECTURE.md). No black box: every ranking can be reproduced by hand.
+* **Per-user engagement tracking.** Interactions are written transactionally to `users/{uid}/engagement/{trackId}`, so two users browsing the same genre get different rankings based on their own history.
+* **Real-time feedback loop.** Recommendations are cached in memory per user+genre (5-minute TTL) and invalidated the moment that user records a new event, so a like or skip is reflected on the next request.
+* **Tested scoring.** The scoring module is pure (no I/O) and covered by a 12-test Vitest suite: `cd server && npm test`.
+* **Locked-down data access.** Firestore security rules restrict client access to the requester's own documents; the Express backend uses the Admin SDK for everything else.
 
----
+## Architecture
 
-## ⚙️ Core Architecture
+* **Frontend:** React 18 + Vite, with domain-specific custom hooks (`useRecommendations`, `useTrackEvents`, `usePlaylists`, ...) separating data access from presentation.
+* **Backend:** Node.js/Express in a routes → middleware → controllers → services layering. Firebase ID tokens are verified in middleware; the user identity always comes from the verified JWT, never the request body.
+* **Database:** Google Firestore, with transactional writes for engagement counters.
+* **External APIs:** Spotify Web API (catalogue search and metadata) and Spotify Web Playback SDK (in-browser streaming).
+* **Deployment:** Render.
 
-The system is designed for maintainability and performance, using a clean separation of concerns:
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the request flow, data model, and the recommendation formula in full, and [INTERVIEW-NOTES.md](INTERVIEW-NOTES.md) for design-decision rationale and known limitations.
 
-* **Frontend:** React 18, utilising domain-driven custom hooks to manage complex playback and event-tracking states without "prop drilling."
-* **Backend:** Node.js/Express, following a Controller-Service-Middleware pattern.
-* **Database:** Google Firestore (NoSQL), utilising transactional writes for engagement scoring to prevent race conditions.
-* **API Layer:** Spotify Web API (catalogue search & audio metadata) + Spotify Web Playback SDK (in-browser streaming).
+## Local installation & setup
 
----
+Clone and install:
 
-## 🧠 The Recommendation Engine
-
-SignalFM moves beyond "black box" algorithms by providing a transparent, literature-based scoring model:
-
-1.  **Data Collection:** Captures track plays, manual skips, and explicit likes via a dedicated `processTrackEvent` service.
-2.  **Weighted Scoring:** Each interaction type is assigned a weight based on empirical studies (Mehrotra et al., 2017), allowing the system to differentiate between "tolerated" (play) and "strongly preferred" (like) content.
-3.  **Seed Selection:** The engine aggregates the top-scoring tracks from the user's engagement history to serve as "seed tracks" for the Spotify Recommendations endpoint, creating a personalised discovery experience from the first session.
-
----
-
-## ⚡ Performance Optimisation
-
-* **Cache-First Strategy:** Implemented a server-side recommendation cache that drastically reduces Spotify API call frequency during active listening sessions.
-* **Atomic Transactions:** Firestore transactions guarantee that user engagement updates (plays/skips) remain accurate even under concurrent load.
-* **Optimised Hooks:** Efficient state management using `useCallback` and `useMemo` to minimise unnecessary re-renders in the playback UI.
-
----
-
-## 🛠️ Tech Stack
-
-* **Frontend:** React, HTML5, CSS3, Vite
-* **Backend:** Node.js, Express.js
-* **Database & Auth:** Firebase Firestore, Firebase Authentication
-* **External Integration:** Spotify Web API & Web Playback SDK
-* **DevOps:** Deployed on Render
-
----
-
-🚀 Local Installation & Setup
-Clone the repository:
-
-Bash
+```bash
 git clone https://github.com/Kelyan05/SignalFM.git
-cd SignalFM
-Install Dependencies:
+cd SignalFM/client && npm install
+cd ../server && npm install
+```
 
-Bash
-# Install Client dependencies
-cd client
-npm install
+Run (two terminals):
 
-# Install Server dependencies
-cd ../server
-npm install
-Run the Application:
-You will need two terminal windows open:
+```bash
+# Terminal 1 — backend
+cd server && node server.js
 
-Terminal 1 (Backend):
+# Terminal 2 — frontend
+cd client && npm run dev
+```
 
-Bash
-cd server
-node server.js
-Terminal 2 (Frontend):
+Run the tests:
 
-Bash
-cd client
-npm run dev
+```bash
+cd server && npm test
+```
 
-### Environment Variables
-Create a `.env` file in the root directory:
+### Environment variables
+
+Create `server/.env`:
+
 ```env
 SPOTIFY_CLIENT_ID=your_client_id
 SPOTIFY_CLIENT_SECRET=your_client_secret
-FIREBASE_CONFIG=your_config_object
-SPOTIFY_REFRESH_TOKEN = your refresh_token
-SPOTIFY_REDIRECT_URI = your_spotify_redirecturi
+SPOTIFY_REDIRECT_URI=your_redirect_uri
+FIREBASE_SERVICE_ACCOUNT=your_service_account_json
+FRONTEND_URL=http://localhost:5173
 ```
 
----
+## Known limitations & roadmap
 
-## 🚧 Roadmap & Future Enhancements
+Kept honest on purpose — these are discussed in more depth in INTERVIEW-NOTES.md:
 
-Based on critical evaluation and identifying areas for growth, the following features are prioritised for future development:
-
-* **Distributed Caching:** Migrating from in-memory Map caching to **Redis** to support multi-instance scaling.
-* **Recency Decay:** Implementing time-based decay for engagement scores so the engine favors current preferences over old interactions.
-* **Automated Testing:** Implementation of a Jest/Vitest suite for backend API endpoints and React Testing Library for frontend hooks.
-* **Diversity Constraints:** Adding logic to mitigate "filter bubble" risks by ensuring recommendations include genre variety.
-* **Full Accessibility Audit:** Completing a full WCAG 2.1 compliance audit.
-
----
+* **In-memory caching** doesn't survive restarts and doesn't work across multiple server instances; Redis would be the fix at scale.
+* **No time decay on engagement**: a like from six months ago counts the same as one from today.
+* **Candidate pool = genre search results**, so the engine can only rerank what Spotify search returns; it can't surface a track outside the searched genre.
+* **Spotify OAuth tokens are passed via redirect URL** during login, which exposes them to browser history; moving to an httpOnly-cookie flow is planned.
+* Expanding test coverage beyond the scoring module (API endpoints, React hooks).
 
 ## 👤 Author
 
@@ -113,7 +74,6 @@ Based on critical evaluation and identifying areas for growth, the following fea
 📧 [darrelkelyan@outlook.com](mailto:darrelkelyan@outlook.com)
 🔗 [https://github.com/Kelyan05](https://github.com/Kelyan05)
 
----
-
 ## 📄 License
+
 This project is open-source and available under the MIT License.
