@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import TrackSearchResult from "../components/TrackSearchResult.jsx";
 import { useRecommendations } from "../hooks/useRecommendations";
 import { usePlaylists } from "../hooks/usePlaylists";
@@ -29,12 +29,6 @@ function Recommendations() {
   const [selectedGenre, setSelectedGenre] = useState("pop");
   const { tracks, loading, error, refresh } = useRecommendations(selectedGenre);
   const { playlists, addToPlaylist } = usePlaylists();
-
-  // Listen for cache-bust events fired after likes/skips/plays
-  useEffect(() => {
-    window.addEventListener("recommendationUpdate", refresh);
-    return () => window.removeEventListener("recommendationUpdate", refresh);
-  }, [refresh]);
 
   const activeGenre = GENRES.find((g) => g.id === selectedGenre);
 
