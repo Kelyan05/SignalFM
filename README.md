@@ -66,6 +66,7 @@ Kept honest on purpose — these are discussed in more depth in INTERVIEW-NOTES.
 * **No time decay on engagement**: a like from six months ago counts the same as one from today.
 * **Candidate pool = genre search results**, so the engine can only rerank what Spotify search returns; it can't surface a track outside the searched genre.
 * **Spotify OAuth tokens are passed via redirect URL** during login, which exposes them to browser history; moving to an httpOnly-cookie flow is planned.
+* **Spotify access tokens are not auto-refreshed client-side**, so in-browser playback stops ~1 hour after connecting until the user reconnects.
 * Expanding test coverage beyond the scoring module (API endpoints, React hooks).
 
 ## 👤 Author

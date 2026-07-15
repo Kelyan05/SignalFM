@@ -43,3 +43,4 @@ The scoring module was extracted into pure functions precisely so it could be te
 * **Popularity bias.** With a 0.35 popularity weight, unknown-to-the-user tracks are ranked mostly by global popularity — a deliberate cold-start choice, but it does mean the feed skews mainstream until the user interacts.
 * **Random-offset exploration is crude.** It guarantees variety between visits but isn't informed exploration (no bandit-style balancing of explore/exploit).
 * **Single-instance assumptions** in both caches, as above.
+* **Spotify access tokens are not auto-refreshed on the client.** The token stored at login expires after ~1 hour and nothing renews it, so in-browser playback stops until the user reconnects. An earlier refresh helper existed but read/wrote localStorage keys nothing else used, so it was dead code and I removed it; the honest fix is a small fetch wrapper that refreshes via `/api/spotify/token` on a 401.
