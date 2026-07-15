@@ -13,7 +13,11 @@ export const getRecommendations = async (req, res) => {
       return res.status(400).json({ error: "genre query param is required" });
     }
 
-    const recommendations = await getRecommendationsForUser(userId, genre);
+    // The client's refresh button sends ?refresh=true; honour it by skipping
+    // the cache (previously this param was silently ignored).
+    const bypassCache = req.query.refresh === "true";
+
+    const recommendations = await getRecommendationsForUser(userId, genre, { bypassCache });
 
     // Always return { recommendations: [...] } so the frontend shape is stable
     return res.json({ recommendations });
