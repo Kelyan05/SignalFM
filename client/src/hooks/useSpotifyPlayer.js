@@ -32,6 +32,14 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
 
       player.addListener("not_ready", () => setPlayerReady(false));
 
+      // Fires for accounts without Premium — the SDK cannot stream for them.
+      // We don't set a device id, so the UI falls back to 30s previews /
+      // open-in-Spotify links (see TrackSearchResult).
+      player.addListener("account_error", ({ message }) => {
+        console.warn("[useSpotifyPlayer] Spotify Premium required for in-app playback:", message);
+        setPlayerReady(false);
+      });
+
       player.addListener("player_state_changed", (state) => {
         if (!state) return;
         setIsPlaying(!state.paused);

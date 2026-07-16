@@ -2,9 +2,11 @@ import { searchTracks } from "../services/spotifyService.js";
 
 export const searchSpotifyTracks = async (req, res) => {
   try {
-    const { q, offset = 0 } = req.query;
+    const { q } = req.query;
+    // Query params arrive as strings; parse explicitly rather than relying on coercion.
+    const offset = Number.parseInt(req.query.offset ?? "0", 10) || 0;
 
-    if (offset > 1000) {
+    if (offset < 0 || offset > 1000) {
       return res.status(400).json({ error: "Pagination limit exceeded" });
     }
 

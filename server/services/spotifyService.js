@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getSpotifyToken } from "../config/spotify.js";
 
-// Unified cache for search and recommendations with TTL
+// In-memory cache for Spotify search results, with TTL.
+// (Recommendation caching lives in recommendationService.js — one cache per concern.)
 const cache = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
@@ -39,6 +40,11 @@ export const searchTracks = async (query, offset = 0) => {
       explicit: track.explicit,
       popularity: track.popularity ?? 0,
       release_date: track.album?.release_date || "",
+      // 30-second MP3 sample; the playback fallback for users without
+      // Spotify Premium. May be null (Spotify no longer returns previews
+      // for API apps registered after Nov 2024), in which case the client
+      // falls back to an open.spotify.com link instead.
+      preview_url: track.preview_url || null,
     }));
 
     cache[cacheKey] = { data: tracks, timestamp: now };
@@ -47,22 +53,4 @@ export const searchTracks = async (query, offset = 0) => {
     console.error("Spotify Service Error:", error.message);
     return [];
   }
-};
-
-// Cache recommendations per user and genre
-export const getCachedRecommendations = async (userId, genre, fetchFn) => {
-  const cacheKey = generateCacheKey("recommendation", { userId, genre });
-
-  const now = Date.now();
-  const cached = cache[cacheKey];
-  if (cached && now - cached.timestamp < CACHE_TTL) {
-    console.log("Recommendations cache hit:", cacheKey);
-    return cached.data;
-  }
-
-  // Call provided fetch function to generate recommendations
-  const recommendations = await fetchFn();
-
-  cache[cacheKey] = { data: recommendations, timestamp: now };
-  return recommendations;
 };

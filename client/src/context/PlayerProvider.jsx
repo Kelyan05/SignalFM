@@ -1,10 +1,40 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { PlayerContext } from "./PlayerContext.jsx";
 
 export function PlayerProvider({ children }) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
   const [queue, setQueue] = useState([]);
+
+  // ── 30-second preview playback (no-Premium fallback) ──
+  // Full playback needs the Web Playback SDK, which requires Spotify Premium.
+  // For everyone else we play Spotify's 30s MP3 sample through a single
+  // shared <audio> element, so starting one preview always stops the last.
+  const previewAudioRef = useRef(null);
+  const [previewTrackId, setPreviewTrackId] = useState(null);
+
+  const stopPreview = useCallback(() => {
+    previewAudioRef.current?.pause();
+    previewAudioRef.current = null;
+    setPreviewTrackId(null);
+  }, []);
+
+  const playPreview = useCallback((track) => {
+    if (!track?.preview_url) return;
+
+    // Clicking the track that's already previewing toggles it off.
+    if (previewAudioRef.current && previewTrackId === track.spotifyId) {
+      stopPreview();
+      return;
+    }
+
+    previewAudioRef.current?.pause();
+    const audio = new Audio(track.preview_url);
+    audio.onended = () => setPreviewTrackId(null);
+    audio.play().catch((err) => console.warn("Preview playback failed:", err));
+    previewAudioRef.current = audio;
+    setPreviewTrackId(track.spotifyId);
+  }, [previewTrackId, stopPreview]);
 
   // ── Add to queue ──
   const addToQueue = useCallback((track) => {
@@ -91,6 +121,9 @@ export function PlayerProvider({ children }) {
         removeFromQueue,
         playTrack,
         playNext,
+        playPreview,
+        stopPreview,
+        previewTrackId,
       }}
     >
       {children}

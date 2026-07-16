@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import NavBar from "../components/NavBar";
 import { auth } from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import Footer from "../components/Footer";
 import Recommendations from "../components/Recommendations";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -15,24 +14,10 @@ import {
 } from "react-icons/fa";
 import "../css/Home.css";
 
-function Home({ onSpotifyConnected }) {
+function Home() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
-
-  // Store tokens from Spotify callback (fragment redirect from SpotifyAuth.jsx)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
-
-    if (accessToken && refreshToken) {
-      localStorage.setItem("spotifyAccessToken", accessToken);
-      localStorage.setItem("spotifyRefreshToken", refreshToken);
-      if (onSpotifyConnected) onSpotifyConnected();
-      window.history.replaceState({}, document.title, "/home");
-    }
-  }, [onSpotifyConnected]);
 
   // Firebase auth listener
   useEffect(() => {
@@ -40,34 +25,13 @@ function Home({ onSpotifyConnected }) {
       setUser(currentUser);
       setLoadingAuth(false);
       if (currentUser) {
-        setSpotifyConnected(!!localStorage.getItem("spotifyRefreshToken"));
+        setSpotifyConnected(!!localStorage.getItem("spotify_refresh_token"));
       }
     });
     return unsubscribe;
   }, []);
 
   const username = user?.email ? user.email.split("@")[0] : "Guest";
-
-  const getFreshAccessToken = async () => {
-    const refreshToken = localStorage.getItem("spotifyRefreshToken");
-    if (!refreshToken) return null;
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/api/spotify/token?refresh_token=${refreshToken}`
-      );
-      const data = await response.json();
-      if (data.access_token) {
-        localStorage.setItem("spotifyAccessToken", data.access_token);
-        return data.access_token;
-      }
-      return null;
-    } catch (err) {
-      console.error("Failed to refresh Spotify token:", err);
-      return null;
-    }
-  };
 
   const handleConnectSpotify = () => {
     window.location.href = `${import.meta.env.VITE_API_URL}/api/spotify/login`;
@@ -169,11 +133,10 @@ function Home({ onSpotifyConnected }) {
         </section>
 
         <section className="recommendation-section">
-          <Recommendations getFreshAccessToken={getFreshAccessToken} />
+          <Recommendations />
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 }
