@@ -40,6 +40,11 @@ export const searchTracks = async (query, offset = 0) => {
       explicit: track.explicit,
       popularity: track.popularity ?? 0,
       release_date: track.album?.release_date || "",
+      // 30-second MP3 sample; the playback fallback for users without
+      // Spotify Premium. May be null (Spotify no longer returns previews
+      // for API apps registered after Nov 2024), in which case the client
+      // falls back to an open.spotify.com link instead.
+      preview_url: track.preview_url || null,
     }));
 
     cache[cacheKey] = { data: tracks, timestamp: now };

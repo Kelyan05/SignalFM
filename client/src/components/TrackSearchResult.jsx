@@ -8,14 +8,22 @@ import {
   FaHeart,
   FaRegHeart,
   FaPlay,
+  FaPause,
   FaList,
   FaPlusCircle,
 } from "react-icons/fa";
 import "../css/TrackSearchResult.css";
 
 function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
-  const { setCurrentTrack, addToQueue } = useContext(PlayerContext);
-  const { like, unlike, queue: queueEvent } = useTrackEvents();
+  const {
+    setCurrentTrack,
+    addToQueue,
+    deviceId,
+    playPreview,
+    stopPreview,
+    previewTrackId,
+  } = useContext(PlayerContext);
+  const { like, unlike, queue: queueEvent, play: playEvent } = useTrackEvents();
 
   // Read like state from the global provider so it is consistent on every page.
   const { isLiked } = useLikedTracks();
@@ -27,7 +35,37 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
   const safeTrack = normalizeTrack(track);
   const liked = isLiked(safeTrack.spotifyId);
 
-  const handlePlay = () => setCurrentTrack(safeTrack);
+  const isPreviewing = previewTrackId === safeTrack.spotifyId;
+
+  // Tiered playback so the app works without Spotify Premium:
+  //   1. SDK device ready (Premium user, Spotify connected) → full playback.
+  //   2. No device but Spotify provides a 30s sample → play the preview.
+  //   3. Neither → open the track on open.spotify.com (works for everyone).
+  // The fallback paths record the play event themselves so the
+  // recommendation engine still learns from non-Premium listening.
+  const handlePlay = () => {
+    if (deviceId) {
+      stopPreview();
+      setCurrentTrack(safeTrack);
+      return;
+    }
+    playEvent(safeTrack.spotifyId);
+    if (safeTrack.preview_url) {
+      playPreview(safeTrack);
+    } else {
+      window.open(
+        `https://open.spotify.com/track/${safeTrack.spotifyId}`,
+        "_blank",
+        "noopener"
+      );
+    }
+  };
+
+  const playTitle = deviceId
+    ? "Play"
+    : safeTrack.preview_url
+    ? "Play 30s preview"
+    : "Open in Spotify";
 
   const handleQueue = () => {
     addToQueue(safeTrack);
@@ -70,8 +108,8 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
       </div>
 
       <div className="track-actions">
-        <button onClick={handlePlay} title="Play">
-          <FaPlay />
+        <button onClick={handlePlay} title={playTitle}>
+          {isPreviewing ? <FaPause /> : <FaPlay />}
         </button>
 
         <button onClick={handleQueue} title="Add to queue">
