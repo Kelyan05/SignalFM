@@ -26,6 +26,10 @@ Because the only query the product makes is "score these ~50 candidates for this
 
 In-memory `Map` keyed by `userId-genre`, 5-minute TTL, invalidated whenever that user records an event, bypassable via `?refresh=true`. The event-driven invalidation is what makes the feed feel live: like a track, refresh, and the ranking has changed. Two honest limitations: (1) it's per-process, so it vanishes on restart and is inconsistent across multiple instances — Render running >1 instance would mean a user could hit an instance with a stale cache; Redis is the standard fix and is on the roadmap. (2) Invalidation deletes by key-prefix scan over the Map, which is O(entries) — fine at this size, and I'd move to a per-user key index if it ever mattered. I also removed a second, duplicate recommendation cache that existed in `spotifyService` but was never called: one caching mechanism per concern.
 
+## Why tiered playback instead of requiring Spotify Premium?
+
+Spotify's Web Playback SDK — the only way to stream full tracks in the browser — is restricted to Premium accounts, so a hard dependency on it silently broke the app's core interaction for free users: Play did nothing. Rather than gate the product, playback degrades through three explicit tiers (full SDK playback → 30-second preview via a shared `<audio>` element → open-in-Spotify link), decided at click time by whether an SDK device id exists. Two details matter in a defence: fallback plays still record the `play` engagement event, so personalisation works identically for free users; and the tiers are ordered by guarantees — the deep link needs no auth, no Premium, and no deprecated API, so there is always a working bottom tier (Spotify stopped returning `preview_url` for API apps registered after Nov 2024, so tier 2 can be absent). The alternative — embedding Spotify's iframe widget per track — would have added a heavier dependency for less control.
+
 ## Security decisions
 
 * **Identity from the JWT, never the body.** `authMiddleware` verifies the Firebase ID token and controllers read `req.user.uid`; a client cannot write events into another user's history by spoofing a userId field.
