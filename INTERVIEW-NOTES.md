@@ -38,7 +38,13 @@ Spotify's Web Playback SDK — the only way to stream full tracks in the browser
 
 ## Testing philosophy
 
-The scoring module was extracted into pure functions precisely so it could be tested without mocking Firestore or Spotify. The 12 tests each encode one behavioural claim I can state out loud: a skip lowers a score, a like raises it, a like beats a play, extreme counts clamp, weights sum to 1, empty engagement degrades to popularity+recency, recency handles all three Spotify date precisions, diversity keeps the best track per artist. That's worth more in a defence than a coverage percentage. Next step: supertest-based endpoint tests with the Firestore emulator.
+The scoring module was extracted into pure functions precisely so it could be tested without mocking Firestore or Spotify. The 12 tests each encode one behavioural claim I can state out loud: a skip lowers a score, a like raises it, a like beats a play, extreme counts clamp, weights sum to 1, empty engagement degrades to popularity+recency, recency handles all three Spotify date precisions, diversity keeps the best track per artist. That's worth more in a defence than a coverage percentage.
+
+## Why an in-memory Firestore double for endpoint tests, not the real emulator?
+
+`server/app.js` was split out of `server.js` (same Express app, minus `app.listen`) specifically so supertest could drive it directly. The remaining question was how to satisfy Firestore without hitting the real service. The real Firestore emulator was the original plan (it's what the roadmap said), but it needs a Java runtime and a running process per test invocation — for what these tests are actually checking (our routing, our validation, our transaction logic), that's cost with no signal: I'm not testing Google's transaction engine. So `server/test/fakeFirestore.js` implements exactly the handful of calls this codebase makes — `collection().doc().get()/set()`, `db.getAll()`, `db.runTransaction()` — as a plain `Map`, and `server/test/setup.js` mocks the `firebase-admin` package so `admin.auth().verifyIdToken()` (Google's code, not mine) returns a controllable fake decoded token while `admin.firestore()` returns the fake db. Everything downstream of that boundary — route → authMiddleware → controller → service → transaction logic — runs for real. 35 tests, no network calls, no external process, sub-4-second run. If a future bug ever depended on genuine Firestore transaction semantics (e.g. real contention across concurrent requests) that the fake can't model, that's exactly when I'd reach for the real emulator instead — not before.
+
+Spotify is handled the same way: `spotifyService.searchTracks` is mocked at the module boundary in the recommendation and search tests, so no HTTP calls leave the test process and no API credentials are needed in CI.
 
 ## Honest limitations of the whole system
 

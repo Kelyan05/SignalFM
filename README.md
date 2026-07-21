@@ -10,7 +10,7 @@ SignalFM is a full-stack music discovery web app. It streams music through the S
 * **Per-user engagement tracking.** Interactions are written transactionally to `users/{uid}/engagement/{trackId}`, so two users browsing the same genre get different rankings based on their own history.
 * **Real-time feedback loop.** Recommendations are cached in memory per user+genre (5-minute TTL) and invalidated the moment that user records a new event, so a like or skip is reflected on the next request.
 * **Works without Spotify Premium.** Full in-app playback uses the Web Playback SDK (a Premium-only Spotify feature); everyone else gets 30-second previews where Spotify provides them, or one-click open-in-Spotify links. Search, recommendations, likes, and playlists never require a Spotify connection at all — only a SignalFM account.
-* **Tested scoring.** The scoring module is pure (no I/O) and covered by a 12-test Vitest suite: `cd server && npm test`.
+* **Tested.** The scoring module is pure (no I/O) and covered by 12 unit tests; every Express route is covered by supertest endpoint tests against an in-memory Firestore double (35 tests total): `cd server && npm test`.
 * **Locked-down data access.** Firestore security rules restrict client access to the requester's own documents; the Express backend uses the Admin SDK for everything else.
 
 ## Architecture
@@ -71,7 +71,7 @@ Kept honest on purpose — these are discussed in more depth in INTERVIEW-NOTES.
 * **Spotify OAuth tokens are passed via redirect URL** during login, which exposes them to browser history; moving to an httpOnly-cookie flow is planned.
 * **30-second previews depend on Spotify**: `preview_url` is not returned for API apps registered after Nov 2024, in which case the no-Premium fallback is the open-in-Spotify link.
 * **Spotify access tokens are not auto-refreshed client-side**, so in-browser playback stops ~1 hour after connecting until the user reconnects.
-* Expanding test coverage beyond the scoring module (API endpoints, React hooks).
+* Endpoint tests use an in-memory Firestore double rather than the real emulator (see INTERVIEW-NOTES.md); React hooks still have no test coverage.
 
 ## 👤 Author
 
