@@ -1,7 +1,7 @@
 import { useContext, useRef, useEffect, useState } from "react";
 import { PlayerContext } from "../context/PlayerContext";
 import { useTrackEvents } from "../hooks/useTrackEvents";
-import { useLikedTracks } from "../context/LikedTracksProvider";
+import { useLikedTracks } from "../hooks/useLikedTracks";
 import { normalizeTrack } from "../utils/normalizeTrack";
 
 import {

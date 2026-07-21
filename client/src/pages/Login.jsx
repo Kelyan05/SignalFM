@@ -20,7 +20,7 @@ function Login() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/home");
-    } catch (err) {
+    } catch {
       setError("Incorrect email or password.");
     }
   };

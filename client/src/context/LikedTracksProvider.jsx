@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useState,
   useCallback,
@@ -8,12 +6,7 @@ import {
 import { auth, db } from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs } from "firebase/firestore";
-
-const LikedTracksContext = createContext({
-  likedTracks: [],
-  fetchLikedTracks: async () => {},
-  isLiked: () => false,
-});
+import { LikedTracksContext } from "./LikedTracksContext";
 
 export function LikedTracksProvider({ children }) {
   const [likedTracks, setLikedTracks] = useState([]);
@@ -63,13 +56,4 @@ export function LikedTracksProvider({ children }) {
       {children}
     </LikedTracksContext.Provider>
   );
-}
-
-// Safe hook — throws a clear error if used outside the provider tree
-// instead of a cryptic "cannot read property of undefined" crash.
-export function useLikedTracks() {
-  const ctx = useContext(LikedTracksContext);
-  if (!ctx)
-    throw new Error("useLikedTracks must be used inside LikedTracksProvider");
-  return ctx;
 }

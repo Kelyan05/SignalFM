@@ -42,6 +42,10 @@ export function usePlaylists() {
   }, [user]);
 
   useEffect(() => {
+    // Fetch-on-mount is the correct use of an effect here; the lint rule is
+    // reacting to setLoading(true) running synchronously inside fetchPlaylists,
+    // not to a real hazard (loading already starts true).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPlaylists();
   }, [fetchPlaylists]);
 

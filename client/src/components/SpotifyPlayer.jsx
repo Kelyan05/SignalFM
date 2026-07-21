@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useRef, useCallback } from "react";
 import { PlayerContext } from "../context/PlayerContext.jsx";
 import { useSpotifyPlayer } from "../hooks/useSpotifyPlayer";
 import { useTrackEvents } from "../hooks/useTrackEvents";
-import { useLikedTracks } from "../context/LikedTracksProvider";
+import { useLikedTracks } from "../hooks/useLikedTracks";
 
 import {
   FaPlay,

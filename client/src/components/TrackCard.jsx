@@ -1,5 +1,5 @@
 import { useTrackEvents } from "../hooks/useTrackEvents";
-import { useLikedTracks } from "../context/LikedTracksProvider";
+import { useLikedTracks } from "../hooks/useLikedTracks";
 import { FaHeart, FaRegHeart, FaTrashAlt } from "react-icons/fa";
 
 function TrackCard({ track, onRemove }) {

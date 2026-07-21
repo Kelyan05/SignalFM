@@ -3,7 +3,7 @@ import NavBar from "../components/NavBar";
 import PlaylistCard from "../components/PlaylistCard";
 import TrackSearchResult from "../components/TrackSearchResult";
 import { usePlaylists } from "../hooks/usePlaylists";
-import { useLikedTracks } from "../context/LikedTracksProvider";
+import { useLikedTracks } from "../hooks/useLikedTracks";
 
 import { FaPlus } from "react-icons/fa";
 import "../css/Playlist.css";

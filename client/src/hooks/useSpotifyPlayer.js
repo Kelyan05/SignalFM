@@ -7,6 +7,7 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
   const [isPlaying,   setIsPlaying]   = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
   const [volume,      setVolumeState] = useState(0.5);
+  const [player,      setPlayer]      = useState(null);
 
   useEffect(() => {
     if (sdkReadyRef.current) return;
@@ -47,6 +48,7 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
 
       player.connect();
       playerRef.current = player;
+      setPlayer(player);
     };
 
     window.onSpotifyWebPlaybackSDKReady = init;
@@ -78,5 +80,5 @@ export function useSpotifyPlayer(setDeviceIdExternal) {
     playerRef.current?.seek(ms);
   }, []);
 
-  return { isPlaying, playerReady, volume, playPause, skip, previous, setVolume, seekTo, player: playerRef.current };
+  return { isPlaying, playerReady, volume, playPause, skip, previous, setVolume, seekTo, player };
 }
