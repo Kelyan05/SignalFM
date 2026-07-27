@@ -132,12 +132,14 @@ export default function SpotifyPlayer() {
   );
 
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", () => {
+    const handleMouseUp = () => {
       isDraggingRef.current = false;
-    });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [handleMouseMove]);
 
