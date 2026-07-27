@@ -1,6 +1,8 @@
 # 🎧 SignalFM — Music Discovery & Recommendation Platform
 
 [![CI](https://github.com/Kelyan05/SignalFM/actions/workflows/ci.yml/badge.svg)](https://github.com/Kelyan05/SignalFM/actions/workflows/ci.yml)
+
+
 https://signalfm-site.onrender.com/
 SignalFM is a full-stack music discovery web app. It streams music through the Spotify Web Playback SDK, records each user's listening behaviour (plays, skips, likes), and uses that history to personalise a transparent, formula-based recommendation feed per genre.
 
