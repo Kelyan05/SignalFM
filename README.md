@@ -76,9 +76,17 @@ Create `server/.env`:
 ```env
 SPOTIFY_CLIENT_ID=your_client_id
 SPOTIFY_CLIENT_SECRET=your_client_secret
-SPOTIFY_REDIRECT_URI=your_redirect_uri
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3001/api/spotify/callback
 FIREBASE_SERVICE_ACCOUNT=your_service_account_json
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://127.0.0.1:5173
+```
+
+`SPOTIFY_REDIRECT_URI` must also be registered as a redirect URI on the app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), or the Connect Spotify button will fail at the Spotify authorization step.
+
+Create `client/.env` — without this, every API call (search, recommendations, Connect Spotify, shared playlists) silently targets `undefined` and fails:
+
+```env
+VITE_API_URL=http://127.0.0.1:3001
 ```
 
 ## Known limitations

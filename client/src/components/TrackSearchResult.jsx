@@ -96,7 +96,7 @@ function TrackSearchResult({ track, playlists = [], onAddToPlaylist }) {
   return (
     <div className="track-card">
       <img
-        src={safeTrack.albumUrl || "https://via.placeholder.com/200"}
+        src={safeTrack.albumUrl || "/default-playlist.png"}
         className="track-image"
         alt={safeTrack.title}
         onClick={handlePlay}

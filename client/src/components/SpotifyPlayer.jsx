@@ -187,7 +187,7 @@ export default function SpotifyPlayer() {
             src={
               currentTrack.albumUrl ||
               currentTrack.image ||
-              "https://via.placeholder.com/200"
+              "/default-playlist.png"
             }
             alt={currentTrack.title}
             className="player-album-art"
@@ -294,9 +294,7 @@ export default function SpotifyPlayer() {
               {queue.map((t, i) => (
                 <li key={`${t.spotifyId}-${i}`} className="queue-item">
                   <img
-                    src={
-                      t.albumUrl || t.image || "https://via.placeholder.com/38"
-                    }
+                    src={t.albumUrl || t.image || "/default-playlist.png"}
                     alt=""
                   />
                   <div className="queue-item-info">

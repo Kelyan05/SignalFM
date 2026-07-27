@@ -22,7 +22,7 @@ function TrackCard({ track, onRemove }) {
   return (
     <div className="track-card">
       <img
-        src={track.albumUrl || track.image || "https://via.placeholder.com/200"}
+        src={track.albumUrl || track.image || "/default-playlist.png"}
         alt={track.title}
         className="track-image"
       />
