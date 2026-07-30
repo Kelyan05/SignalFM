@@ -10,8 +10,8 @@
 
 SignalFM is a full-stack music discovery web app. It streams music through the Spotify Web Playback SDK, records each user's listening behaviour (plays, skips, likes), and uses that history to personalise a transparent, formula-based recommendation feed per genre.
 
-<!-- TODO: replace with a 15-second demo GIF: search → play → like → recommendations reorder -->
-<!-- ![SignalFM demo](docs/demo.gif) -->
+![SignalFM recommendation feed — genre-filtered picks generated live from the Spotify catalogue](docs/demo-screenshot.jpg)
+<p align="center"><sub>Live per-genre recommendations, generated from the scoring formula below — try it yourself on the <a href="https://signalfm-site.onrender.com">demo</a>.</sub></p>
 
 ## The recommendation engine in one formula
 
